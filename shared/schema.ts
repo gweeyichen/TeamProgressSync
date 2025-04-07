@@ -21,22 +21,14 @@ export type User = typeof users.$inferSelect;
 export const financialData = pgTable("financial_data", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
-  year: integer("year").notNull(),
-  category: text("category").notNull(), // 'income_statement', 'balance_sheet', 'cash_flow'
-  field: text("field").notNull(), // e.g., 'revenue', 'cogs', 'cash', etc.
-  value: numeric("value").notNull(),
-  isProjection: boolean("is_projection").notNull().default(false),
+  dataJson: text("data_json").notNull(), // Store all financial data as JSON
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const insertFinancialDataSchema = createInsertSchema(financialData).pick({
   userId: true,
-  year: true,
-  category: true,
-  field: true,
-  value: true,
-  isProjection: true,
+  dataJson: true,
 });
 
 export type InsertFinancialData = z.infer<typeof insertFinancialDataSchema>;
@@ -65,22 +57,14 @@ export type IndustryData = typeof industryData.$inferSelect;
 export const valuationParameters = pgTable("valuation_parameters", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
-  wacc: numeric("wacc").notNull(),
-  perpetualGrowthRate: numeric("perpetual_growth_rate").notNull(),
-  ebitdaMultiple: numeric("ebitda_multiple").notNull(),
-  peRatio: numeric("pe_ratio").notNull(),
-  psRatio: numeric("ps_ratio").notNull(),
+  paramsJson: text("params_json").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const insertValuationParametersSchema = createInsertSchema(valuationParameters).pick({
   userId: true,
-  wacc: true,
-  perpetualGrowthRate: true,
-  ebitdaMultiple: true,
-  peRatio: true,
-  psRatio: true,
+  paramsJson: true,
 });
 
 export type InsertValuationParameters = z.infer<typeof insertValuationParametersSchema>;
@@ -90,26 +74,14 @@ export type ValuationParameters = typeof valuationParameters.$inferSelect;
 export const investmentModels = pgTable("investment_models", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
-  name: text("name").notNull(),
-  initialInvestment: numeric("initial_investment").notNull(),
-  ownershipStake: numeric("ownership_stake").notNull(),
-  investmentYear: integer("investment_year").notNull(),
-  exitYear: integer("exit_year").notNull(),
-  exitMultiple: numeric("exit_multiple").notNull(),
-  companyGrowthRate: numeric("company_growth_rate").notNull(),
+  modelJson: text("model_json").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const insertInvestmentModelSchema = createInsertSchema(investmentModels).pick({
   userId: true,
-  name: true,
-  initialInvestment: true,
-  ownershipStake: true,
-  investmentYear: true,
-  exitYear: true,
-  exitMultiple: true,
-  companyGrowthRate: true,
+  modelJson: true,
 });
 
 export type InsertInvestmentModel = z.infer<typeof insertInvestmentModelSchema>;
