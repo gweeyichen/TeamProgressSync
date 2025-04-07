@@ -1,11 +1,22 @@
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { FinancialYear, FinancialData } from '@/lib/types';
 
 // Define the context interface
 interface UserContextType {
   userId: number | null;
   setUserId: (id: number | null) => void;
+  historicalFinancials: {
+    incomeStatement: Record<FinancialYear, FinancialData>;
+    balanceSheet: Record<FinancialYear, FinancialData>;
+    cashFlow: Record<FinancialYear, FinancialData>;
+  } | null;
+  setHistoricalFinancials: (data: {
+    incomeStatement: Record<FinancialYear, FinancialData>;
+    balanceSheet: Record<FinancialYear, FinancialData>;
+    cashFlow: Record<FinancialYear, FinancialData>;
+  }) => void;
   saveFinancialData: (data: any) => Promise<any>;
   loadFinancialData: () => Promise<any>;
   saveValuationParameters: (params: any) => Promise<any>;
@@ -18,6 +29,8 @@ interface UserContextType {
 const UserContext = createContext<UserContextType>({
   userId: 1, // Default user ID 
   setUserId: () => {},
+  historicalFinancials: null,
+  setHistoricalFinancials: () => {},
   saveFinancialData: async () => null,
   loadFinancialData: async () => null,
   saveValuationParameters: async () => null,
@@ -32,6 +45,13 @@ interface UserProviderProps {
 
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const [userId, setUserId] = useState<number | null>(1); // Default user ID for now
+  
+  // Historical financials state to share between components
+  const [historicalFinancials, setHistoricalFinancials] = useState<{
+    incomeStatement: Record<FinancialYear, FinancialData>;
+    balanceSheet: Record<FinancialYear, FinancialData>;
+    cashFlow: Record<FinancialYear, FinancialData>;
+  } | null>(null);
 
   // Mutation to save financial data
   const financialDataMutation = useMutation({
@@ -209,6 +229,8 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       value={{
         userId,
         setUserId,
+        historicalFinancials,
+        setHistoricalFinancials,
         saveFinancialData,
         loadFinancialData,
         saveValuationParameters,

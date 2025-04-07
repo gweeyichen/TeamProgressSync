@@ -30,7 +30,7 @@ export interface ProjectedData {
 }
 
 // Industry data types
-export type IndustryType = 'tech' | 'healthcare' | 'retail' | 'manufacturing' | 'financial';
+export type IndustryType = 'tech' | 'healthcare' | 'retail' | 'manufacturing' | 'financial' | 'energy' | 'telecom' | 'real_estate';
 
 export interface IndustryFinancialData {
   name: string;

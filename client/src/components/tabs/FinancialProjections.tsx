@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { ProjectionYear, FinancialData, ProjectionParams } from '@/lib/types';
 import FinancialTable from '@/components/ui/FinancialTable';
+import { useUser } from '@/contexts/UserContext';
+import { showNotification } from '@/components/ui/notification';
 
 // Initial projection parameters
 const initialProjectionParams: ProjectionParams = {
@@ -15,6 +17,7 @@ const initialProjectionParams: ProjectionParams = {
 
 export default function FinancialProjections() {
   const projectionYears: ProjectionYear[] = ['2025', '2026', '2027', '2028', '2029'];
+  const { historicalFinancials } = useUser();
   
   const [params, setParams] = useState<ProjectionParams>(initialProjectionParams);
   const [projectedData, setProjectedData] = useState<{
@@ -45,8 +48,19 @@ export default function FinancialProjections() {
     }
   });
   
-  // Base values for projections (would be taken from historical data in a real app)
-  const baseValues = {
+  // Base values for projections - using data from historical financials when available
+  const baseValues = historicalFinancials ? {
+    revenue: historicalFinancials.incomeStatement['2024']?.revenue || 7800,
+    cogs: historicalFinancials.incomeStatement['2024']?.cogs || 2730,
+    cash: historicalFinancials.balanceSheet['2024']?.cash || 1700,
+    accountsReceivable: historicalFinancials.balanceSheet['2024']?.accountsReceivable || 1200,
+    inventory: historicalFinancials.balanceSheet['2024']?.inventory || 900,
+    fixedAssets: historicalFinancials.balanceSheet['2024']?.fixedAssets || 3400,
+    accountsPayable: historicalFinancials.balanceSheet['2024']?.accountsPayable || 700,
+    shortTermDebt: historicalFinancials.balanceSheet['2024']?.shortTermDebt || 1100,
+    longTermDebt: historicalFinancials.balanceSheet['2024']?.longTermDebt || 1700,
+    equity: historicalFinancials.balanceSheet['2024']?.equity || 3700
+  } : {
     revenue: 7800, // from 2024
     cogs: 2730,
     cash: 1700,
@@ -59,6 +73,13 @@ export default function FinancialProjections() {
     equity: 3700
   };
   
+  // Display notification when historical data is loaded
+  useEffect(() => {
+    if (historicalFinancials) {
+      showNotification("Projections updated with historical data from previous tab", "info");
+    }
+  }, [historicalFinancials]);
+
   // Update projection parameters
   const handleParamChange = (param: keyof ProjectionParams, value: number) => {
     setParams(prevParams => ({
@@ -207,7 +228,7 @@ export default function FinancialProjections() {
     });
     
     setProjectedData(newProjectedData);
-  }, [params, projectionYears]);
+  }, [params, projectionYears, historicalFinancials]);
   
   // Income Statement rows definition
   const incomeStatementRows = [

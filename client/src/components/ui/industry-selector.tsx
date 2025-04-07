@@ -35,6 +35,9 @@ export default function IndustrySelector({ onSelectIndustry }: IndustrySelectorP
           <option value="retail">Retail</option>
           <option value="manufacturing">Manufacturing</option>
           <option value="financial">Financial Services</option>
+          <option value="energy">Energy</option>
+          <option value="telecom">Telecommunications</option>
+          <option value="real_estate">Real Estate</option>
         </select>
         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-neutral-500">
           <i className="ri-arrow-down-s-line"></i>

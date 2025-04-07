@@ -97,14 +97,79 @@ const industryData: Record<IndustryType, IndustryFinancialData> = {
     },
     assets: {
       "Cash & Equivalents": [25000, 27500, 30000],
+      "Accounts Receivable": [8000, 8800, 9700],
       "Investments": [75000, 82500, 90000],
       "Loans Receivable": [120000, 132000, 145000],
       "Property & Equipment": [4000, 4200, 4400]
     },
     liabilities: {
+      "Accounts Payable": [5000, 5500, 6000],
       "Deposits": [150000, 165000, 180000],
       "Short-term Debt": [15000, 16500, 18000],
       "Long-term Debt": [45000, 49500, 54000]
+    }
+  },
+  energy: {
+    name: "Energy",
+    revenue: [22000, 24200, 26000],
+    cogs: [13200, 14520, 15600],
+    expenses: {
+      "Research & Development": [1100, 1210, 1300],
+      "Sales & Marketing": [880, 968, 1040],
+      "General & Administrative": [2200, 2420, 2600]
+    },
+    assets: {
+      "Cash & Equivalents": [4000, 4400, 4700],
+      "Accounts Receivable": [3300, 3630, 3900],
+      "Inventory": [2200, 2420, 2600],
+      "Property & Equipment": [35000, 38500, 41500]
+    },
+    liabilities: {
+      "Accounts Payable": [3000, 3300, 3550],
+      "Short-term Debt": [2500, 2750, 2950],
+      "Long-term Debt": [15000, 16500, 17750]
+    }
+  },
+  telecom: {
+    name: "Telecommunications",
+    revenue: [18000, 19800, 21600],
+    cogs: [7200, 7920, 8640],
+    expenses: {
+      "Research & Development": [1800, 1980, 2160],
+      "Sales & Marketing": [3600, 3960, 4320],
+      "General & Administrative": [2700, 2970, 3240]
+    },
+    assets: {
+      "Cash & Equivalents": [3000, 3300, 3600],
+      "Accounts Receivable": [4500, 4950, 5400],
+      "Inventory": [900, 990, 1080],
+      "Property & Equipment": [30000, 33000, 36000]
+    },
+    liabilities: {
+      "Accounts Payable": [2700, 2970, 3240],
+      "Short-term Debt": [3600, 3960, 4320],
+      "Long-term Debt": [18000, 19800, 21600]
+    }
+  },
+  real_estate: {
+    name: "Real Estate",
+    revenue: [9000, 9900, 10800],
+    cogs: [3600, 3960, 4320],
+    expenses: {
+      "Research & Development": [270, 297, 324],
+      "Sales & Marketing": [1350, 1485, 1620],
+      "General & Administrative": [1800, 1980, 2160]
+    },
+    assets: {
+      "Cash & Equivalents": [2000, 2200, 2400],
+      "Accounts Receivable": [900, 990, 1080],
+      "Inventory": [0, 0, 0],
+      "Property & Equipment": [45000, 49500, 54000]
+    },
+    liabilities: {
+      "Accounts Payable": [1200, 1320, 1440],
+      "Short-term Debt": [3000, 3300, 3600],
+      "Long-term Debt": [27000, 29700, 32400]
     }
   }
 };

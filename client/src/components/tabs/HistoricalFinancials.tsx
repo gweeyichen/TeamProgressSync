@@ -5,6 +5,7 @@ import ValidationSummary from '@/components/ui/ValidationSummary';
 import FinancialTable from '@/components/ui/FinancialTable';
 import IndustrySelector from '@/components/ui/industry-selector';
 import { showNotification } from '@/components/ui/notification';
+import { useUser } from '@/contexts/UserContext';
 
 // Define initial financial data structure
 const initialFinancialData = {
@@ -61,6 +62,7 @@ export default function HistoricalFinancials() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   
   const { getIndustryData } = useIndustryData();
+  const { historicalFinancials, setHistoricalFinancials } = useUser();
   
   // Income Statement rows definition
   const incomeStatementRows = [
@@ -203,12 +205,24 @@ export default function HistoricalFinancials() {
       };
     });
     
-    setFinancialData({
-      incomeStatement: updatedIncomeStatement,
-      balanceSheet: updatedBalanceSheet,
-      cashFlow: updatedCashFlow
-    });
-  }, [years]);
+    // Use a flag to avoid infinite recursion
+    const hasChanged = JSON.stringify(updatedIncomeStatement) !== JSON.stringify(financialData.incomeStatement) ||
+                       JSON.stringify(updatedBalanceSheet) !== JSON.stringify(financialData.balanceSheet) ||
+                       JSON.stringify(updatedCashFlow) !== JSON.stringify(financialData.cashFlow);
+    
+    if (hasChanged) {
+      const updatedData = {
+        incomeStatement: updatedIncomeStatement,
+        balanceSheet: updatedBalanceSheet,
+        cashFlow: updatedCashFlow
+      };
+      
+      setFinancialData(updatedData);
+      
+      // Update the context with the latest historical financials
+      setHistoricalFinancials(updatedData);
+    }
+  }, [years, financialData]);
   
   // Update financial data when a field changes
   const handleIncomeStatementChange = (field: string, year: FinancialYear, value: number) => {
@@ -396,6 +410,8 @@ export default function HistoricalFinancials() {
   const saveHistoricalData = () => {
     // In a real app, we would save the data to a database or API
     if (validateFinancialData()) {
+      // Update the context with the latest historical financials
+      setHistoricalFinancials(financialData);
       showNotification('Historical data saved successfully!', 'success');
     } else {
       showNotification('Please fix validation errors before saving.', 'error');
