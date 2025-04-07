@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ProjectionYear, FinancialData, ProjectionParams } from '@/lib/types';
 import FinancialTable from '@/components/ui/FinancialTable';
 import { useUser } from '@/contexts/UserContext';
@@ -73,9 +73,11 @@ export default function FinancialProjections() {
     equity: 3700
   };
   
-  // Display notification when historical data is loaded
+  // Display notification when historical data is loaded (using ref to prevent infinite renders)
+  const notificationShown = React.useRef(false);
   useEffect(() => {
-    if (historicalFinancials) {
+    if (historicalFinancials && !notificationShown.current) {
+      notificationShown.current = true;
       showNotification("Projections updated with historical data from previous tab", "info");
     }
   }, [historicalFinancials]);

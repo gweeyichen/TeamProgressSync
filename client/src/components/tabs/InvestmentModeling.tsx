@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { ProjectionYear } from '../../lib/types';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface InvestmentParams {
   initialInvestment: number;
@@ -8,6 +9,10 @@ interface InvestmentParams {
   exitYear: number;
   exitMultiple: number;
   companyGrowthRate: number;
+  // New debt-related parameters
+  debtAmount: number;
+  debtInterestRate: number;
+  debtPaymentType: 'linear' | 'lumpSum';
 }
 
 export default function InvestmentModeling() {
@@ -18,6 +23,10 @@ export default function InvestmentModeling() {
     exitYear: 2029,
     exitMultiple: 15, // EBITDA multiple
     companyGrowthRate: 10, // percentage
+    // New debt parameters
+    debtAmount: 3000, // in thousands
+    debtInterestRate: 7, // percentage
+    debtPaymentType: 'linear' as 'linear' | 'lumpSum',
   });
   
   const [investmentResults, setInvestmentResults] = useState({
@@ -50,6 +59,61 @@ export default function InvestmentModeling() {
       ...prev,
       [param]: value
     }));
+  };
+  
+  // Handle payment type toggle
+  const handleTogglePaymentType = (type: 'linear' | 'lumpSum') => {
+    setInvestmentParams(prev => ({
+      ...prev,
+      debtPaymentType: type
+    }));
+  };
+  
+  // Calculate cash flow with debt payments
+  const calculateDebtCashFlow = () => {
+    const holdingPeriod = investmentParams.exitYear - investmentParams.investmentYear;
+    const debtAmount = investmentParams.debtAmount;
+    const interestRate = investmentParams.debtInterestRate / 100;
+    const paymentType = investmentParams.debtPaymentType;
+    
+    const years: number[] = [];
+    for (let i = investmentParams.investmentYear; i <= investmentParams.exitYear; i++) {
+      years.push(i);
+    }
+    
+    let debtBalance = debtAmount;
+    const cashFlowData = years.map((year, index) => {
+      const yearStr = year.toString() as ProjectionYear;
+      const ebitda = projectedEBITDA[yearStr] || 0;
+      
+      let principal = 0;
+      let interest = 0;
+      
+      if (paymentType === 'linear') {
+        // Linear payment: equal principal payments each year
+        principal = index === 0 ? 0 : debtAmount / (holdingPeriod);
+        interest = debtBalance * interestRate;
+      } else {
+        // Lump sum: pay interest only until final year, then repay principal
+        interest = debtBalance * interestRate;
+        principal = index === holdingPeriod - 1 ? debtAmount : 0;
+      }
+      
+      debtBalance -= principal;
+      
+      const freeCashFlow = ebitda - interest - principal;
+      
+      return {
+        year,
+        ebitda,
+        interest,
+        principal,
+        debtBalance,
+        freeCashFlow,
+      };
+    });
+    
+    return cashFlowData;
   };
   
   // Calculate investment returns
@@ -224,6 +288,111 @@ export default function InvestmentModeling() {
         </div>
       </div>
       
+      {/* Debt Financing Section */}
+      <div className="border-t border-neutral-200 pt-6 mb-6">
+        <h3 className="text-lg font-semibold mb-4">Debt Financing Options</h3>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Debt Amount ($000s)</label>
+              <input
+                type="number"
+                value={investmentParams.debtAmount}
+                onChange={(e) => handleParamChange('debtAmount', parseFloat(e.target.value) || 0)}
+                className="block w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+              />
+            </div>
+            
+            <div className="mb-4">
+              <div className="flex justify-between mb-1">
+                <span>Interest Rate</span>
+                <span>{investmentParams.debtInterestRate}%</span>
+              </div>
+              <input 
+                type="range" 
+                min="0" 
+                max="15" 
+                value={investmentParams.debtInterestRate} 
+                step="0.1" 
+                onChange={(e) => handleParamChange('debtInterestRate', parseFloat(e.target.value))}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              />
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-neutral-700 mb-2">Payment Type</label>
+              <div className="flex space-x-4">
+                <button
+                  type="button"
+                  onClick={() => handleTogglePaymentType('linear')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium ${
+                    investmentParams.debtPaymentType === 'linear'
+                      ? 'bg-primary text-white'
+                      : 'bg-neutral-200 text-neutral-700 hover:bg-neutral-300'
+                  }`}
+                >
+                  Linear Payments
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleTogglePaymentType('lumpSum')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium ${
+                    investmentParams.debtPaymentType === 'lumpSum'
+                      ? 'bg-primary text-white'
+                      : 'bg-neutral-200 text-neutral-700 hover:bg-neutral-300'
+                  }`}
+                >
+                  Balloon Payment
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-neutral-500">
+                {investmentParams.debtPaymentType === 'linear'
+                  ? 'Equal principal repayments each year with interest paid on remaining balance'
+                  : 'Interest-only payments with full principal repaid at exit (balloon payment)'}
+              </p>
+            </div>
+          </div>
+          
+          <div>
+            <h4 className="text-base font-medium mb-3">Cash Flow Impact</h4>
+            <div className="bg-white p-1 border border-neutral-200 rounded-lg h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={calculateDebtCashFlow()}
+                  margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="year" />
+                  <YAxis />
+                  <Tooltip formatter={(value) => formatCurrency(value)} />
+                  <Legend />
+                  <Line type="monotone" dataKey="ebitda" name="EBITDA" stroke="#4f46e5" activeDot={{ r: 8 }} />
+                  <Line type="monotone" dataKey="interest" name="Interest" stroke="#ef4444" />
+                  <Line type="monotone" dataKey="principal" name="Principal" stroke="#f97316" />
+                  <Line type="monotone" dataKey="freeCashFlow" name="Free Cash Flow" stroke="#22c55e" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className="text-xs text-neutral-500">
+                <span className="inline-block w-3 h-3 bg-[#4f46e5] mr-1"></span> EBITDA: Operating profits
+              </div>
+              <div className="text-xs text-neutral-500">
+                <span className="inline-block w-3 h-3 bg-[#ef4444] mr-1"></span> Interest: Cost of debt
+              </div>
+              <div className="text-xs text-neutral-500">
+                <span className="inline-block w-3 h-3 bg-[#f97316] mr-1"></span> Principal: Debt repayment
+              </div>
+              <div className="text-xs text-neutral-500">
+                <span className="inline-block w-3 h-3 bg-[#22c55e] mr-1"></span> FCF: Cash after debt service
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Sensitivity Analysis Section */}
       <div className="border-t border-neutral-200 pt-6">
         <h3 className="text-lg font-semibold mb-3">Sensitivity Analysis</h3>
         <div className="overflow-x-auto">
