@@ -6,10 +6,11 @@ import HistoricalFinancials from "@/components/tabs/HistoricalFinancials";
 import FinancialProjections from "@/components/tabs/FinancialProjections";
 import CompanyValuation from "@/components/tabs/CompanyValuation";
 import InvestmentModeling from "@/components/tabs/InvestmentModeling";
+import WorkingCapital from "@/components/tabs/WorkingCapital";
 import WeeklyReports from "@/components/tabs/WeeklyReports";
 import AnalysisCharts from "@/components/tabs/AnalysisCharts";
 
-type TabId = 'historical' | 'projections' | 'valuation' | 'investment' | 'reports' | 'charts';
+type TabId = 'historical' | 'projections' | 'valuation' | 'investment' | 'working-capital' | 'reports' | 'charts';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<TabId>('historical');
@@ -34,6 +35,9 @@ export default function Home() {
             </div>
             <div className={`tab-pane ${activeTab === 'investment' ? 'active' : ''}`}>
               <InvestmentModeling />
+            </div>
+            <div className={`tab-pane ${activeTab === 'working-capital' ? 'active' : ''}`}>
+              <WorkingCapital />
             </div>
             <div className={`tab-pane ${activeTab === 'reports' ? 'active' : ''}`}>
               <WeeklyReports />

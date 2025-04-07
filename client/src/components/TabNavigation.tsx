@@ -1,6 +1,6 @@
 import { Dispatch, SetStateAction } from 'react';
 
-type TabId = 'historical' | 'projections' | 'valuation' | 'investment' | 'reports' | 'charts';
+type TabId = 'historical' | 'projections' | 'valuation' | 'investment' | 'reports' | 'charts' | 'working-capital';
 
 interface TabNavigationProps {
   activeTab: TabId;
@@ -13,6 +13,7 @@ export default function TabNavigation({ activeTab, setActiveTab }: TabNavigation
     { id: 'projections', label: 'Financial Projections' },
     { id: 'valuation', label: 'Company Valuation' },
     { id: 'investment', label: 'Investment Modeling' },
+    { id: 'working-capital', label: 'Working Capital', icon: 'ri-exchange-funds-line' },
     { id: 'reports', label: 'Weekly Reports', icon: 'ri-file-chart-line' },
     { id: 'charts', label: 'Analysis Charts' }
   ];
