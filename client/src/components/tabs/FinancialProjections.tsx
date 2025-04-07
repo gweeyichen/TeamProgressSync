@@ -91,7 +91,7 @@ export default function FinancialProjections() {
   };
   
   // Generate financial projections based on parameters
-  useEffect(() => {
+  const generateProjections = useMemo(() => {
     const newProjectedData = {
       incomeStatement: {} as Record<ProjectionYear, FinancialData>,
       balanceSheet: {} as Record<ProjectionYear, FinancialData>,
@@ -116,7 +116,7 @@ export default function FinancialProjections() {
       // Income Statement Projections
       const revenue = index === 0 
         ? prevYearRevenue * (1 + params.revenueGrowth / 100)
-        : newProjectedData.incomeStatement[projectionYears[index - 1]].revenue * (1 + params.revenueGrowth / 100);
+        : newProjectedData.incomeStatement[projectionYears[index - 1]]?.revenue * (1 + params.revenueGrowth / 100) || 0;
       
       const cogs = revenue * (1 - params.grossMargin / 100);
       const grossProfit = revenue - cogs;
@@ -229,8 +229,13 @@ export default function FinancialProjections() {
       };
     });
     
-    setProjectedData(newProjectedData);
+    return newProjectedData;
   }, [params, projectionYears, baseValues]);
+  
+  // Set the projected data when the generated projections change
+  useEffect(() => {
+    setProjectedData(generateProjections);
+  }, [generateProjections]);
   
   // Income Statement rows definition
   const incomeStatementRows = [
