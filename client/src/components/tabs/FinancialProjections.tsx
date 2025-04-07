@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ProjectionYear, FinancialData, ProjectionParams } from '@/lib/types';
+import { ProjectionYear, FinancialData, ProjectionParams, IndustryType } from '@/lib/types';
 import FinancialTable from '@/components/ui/FinancialTable';
+import IndustrySelector from '@/components/ui/industry-selector';
 import { useUser } from '@/contexts/UserContext';
 import { showNotification } from '@/components/ui/notification';
+import useIndustryData, { getIndustryParams } from '@/hooks/use-industry-data';
 
 // Initial projection parameters
 const initialProjectionParams: ProjectionParams = {
@@ -18,6 +20,13 @@ const initialProjectionParams: ProjectionParams = {
 export default function FinancialProjections() {
   const projectionYears: ProjectionYear[] = ['2025', '2026', '2027', '2028', '2029'];
   const { historicalFinancials } = useUser();
+  
+  // Handle industry selection and parameter updates
+  const handleIndustrySelect = (industry: IndustryType) => {
+    const industryParams = getIndustryParams(industry);
+    setParams(industryParams);
+    showNotification(`Parameters updated to match ${industry.replace('_', ' ')} industry standards`, 'success');
+  };
   
   const [params, setParams] = useState<ProjectionParams>(initialProjectionParams);
   const [projectedData, setProjectedData] = useState<{
@@ -294,6 +303,16 @@ export default function FinancialProjections() {
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
       <h2 className="text-xl font-bold mb-4">Financial Projections (2025-2029)</h2>
+      
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Industry-Based Projections</h3>
+          <p className="text-sm text-neutral-600 mb-3">
+            Select an industry to auto-adjust parameters to industry standards
+          </p>
+          <IndustrySelector onSelectIndustry={handleIndustrySelect} />
+        </div>
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div>

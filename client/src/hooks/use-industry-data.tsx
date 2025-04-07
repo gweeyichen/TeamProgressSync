@@ -174,6 +174,57 @@ const industryData: Record<IndustryType, IndustryFinancialData> = {
   }
 };
 
+// Calculate industry-specific projection parameters
+export function getIndustryParams(industry: IndustryType) {
+  const data = industryData[industry];
+  
+  // Calculate average growth rate from revenue data (3 years)
+  const years = data.revenue.length;
+  const revenueGrowth = years > 1 
+    ? Math.round((data.revenue[years-1] / data.revenue[0] - 1) * 100 / (years - 1)) 
+    : 10;
+  
+  // Calculate gross margin from latest year
+  const latestRevenue = data.revenue[years-1];
+  const latestCOGS = data.cogs[years-1];
+  const grossMargin = Math.round((1 - latestCOGS / latestRevenue) * 100);
+  
+  // Calculate SG&A as percentage of revenue
+  const salesMarketing = data.expenses["Sales & Marketing"]?.[years-1] || 0;
+  const generalAdmin = data.expenses["General & Administrative"]?.[years-1] || 0;
+  const sgaPercent = Math.round(((salesMarketing + generalAdmin) / latestRevenue) * 100);
+  
+  // Calculate R&D as percentage of revenue
+  const rd = data.expenses["Research & Development"]?.[years-1] || 0;
+  const rdPercent = Math.round((rd / latestRevenue) * 100);
+  
+  // Estimate CapEx as percentage of revenue (based on property & equipment growth)
+  const propertyEquipment = data.assets["Property & Equipment"]?.[years-1] || 0;
+  const prevPropertyEquipment = data.assets["Property & Equipment"]?.[years-2] || propertyEquipment * 0.9;
+  const capexPercent = Math.round(((propertyEquipment - prevPropertyEquipment) / latestRevenue) * 100);
+  
+  // Set tax rate based on industry standards
+  let taxRate = 25; // Default corporate tax rate
+  if (industry === 'energy') taxRate = 30;
+  if (industry === 'financial') taxRate = 22;
+  
+  // Calculate working capital as percentage of revenue
+  const receivables = data.assets["Accounts Receivable"]?.[years-1] || 0;
+  const inventory = data.assets["Inventory"]?.[years-1] || 0;
+  const payables = data.liabilities["Accounts Payable"]?.[years-1] || 0;
+  const wcPercent = Math.round(((receivables + inventory - payables) / latestRevenue) * 100);
+  
+  return {
+    revenueGrowth,
+    grossMargin,
+    sgaPercent,
+    rdPercent,
+    capexPercent: capexPercent > 0 ? capexPercent : 5, // Ensure it's at least 5%
+    taxRate,
+    wcPercent: wcPercent > 0 ? wcPercent : 10 // Ensure it's at least 10%
+  };
+}
+
 export default function useIndustryData() {
   const [selectedIndustry, setSelectedIndustry] = useState<IndustryType | null>(null);
   
@@ -189,6 +240,7 @@ export default function useIndustryData() {
   return {
     selectedIndustry,
     getIndustryData,
-    getAllIndustryData
+    getAllIndustryData,
+    getIndustryParams
   };
 }
