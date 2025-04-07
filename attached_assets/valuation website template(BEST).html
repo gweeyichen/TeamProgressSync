@@ -1,0 +1,2347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Projection & Valuation Tool</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.0.4/build/global/luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.2.0/dist/chartjs-adapter-luxon.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.1/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        .section-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #1a2980 0%, #26d0ce 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: right;
+        }
+        th {
+            background-color: #f2f2f2;
+            text-align: left;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .financial-header {
+            background-color: #e6f7ff;
+            font-weight: bold;
+        }
+        .financial-subheader {
+            background-color: #f0f8ff;
+            font-style: italic;
+        }
+        .financial-total {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .slider-container {
+            margin-bottom: 15px;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .valuation-methods {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .valuation-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .nav-tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px 5px 0 0;
+        }
+        .nav-tab.active {
+            background-color: white;
+            color: #1a2980;
+            border-bottom: 3px solid #1a2980;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 10px;
+            border-radius: 5px;
+            background: #d3d3d3;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #1a2980;
+            cursor: pointer;
+        }
+        .metric-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1a2980;
+        }
+        .metric-label {
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 max-w-7xl mx-auto">
+    <div class="header">
+        <h1 class="text-3xl font-bold">Financial Projection & Valuation Tool</h1>
+        <p class="text-lg mt-2">Comprehensive financial modeling with pre-loaded data</p>
+    </div>
+
+    <div class="mb-6">
+        <div class="flex flex-wrap gap-2">
+            <div class="nav-tab active" onclick="showTab('historical')">Historical Financials</div>
+            <div class="nav-tab" onclick="showTab('projections')">Financial Projections</div>
+            <div class="nav-tab" onclick="showTab('valuation')">Company Valuation</div>
+            <div class="nav-tab" onclick="showTab('investment')">Investment Modeling</div>
+            <div class="nav-tab" onclick="showTab('charts')">Analysis Charts</div>
+        </div>
+    </div>
+
+    <!-- Historical Financials Tab -->
+    <div id="historical" class="tab-content active">
+        <div class="section-card">
+            <h2 class="text-2xl font-bold mb-4">Historical Financial Data (2022-2024)</h2>
+            
+            <h3 class="text-xl font-semibold mb-3">Income Statement ($000s)</h3>
+            <div class="overflow-x-auto mb-6">
+                <table class="min-w-full">
+                    <thead>
+                        <tr>
+                            <th>Line Item</th>
+                            <th>2022</th>
+                            <th>2023</th>
+                            <th>2024</th>
+                        </tr>
+                    </thead>
+                    <tbody id="income-statement-historical-editable">
+                        <!-- Will be populated by JavaScript with input fields -->
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 class="text-xl font-semibold mb-3">Balance Sheet ($000s)</h3>
+            <div class="overflow-x-auto mb-6">
+                <table class="min-w-full">
+                    <thead>
+                        <tr>
+                            <th>Line Item</th>
+                            <th>2022</th>
+                            <th>2023</th>
+                            <th>2024</th>
+                        </tr>
+                    </thead>
+                    <tbody id="balance-sheet-historical-editable">
+                        <!-- Will be populated by JavaScript with input fields -->
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 class="text-xl font-semibold mb-3">Cash Flow Statement ($000s)</h3>
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <tr>
+                            <th>Line Item</th>
+                            <th>2022</th>
+                            <th>2023</th>
+                            <th>2024</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cash-flow-historical-editable">
+                        <!-- Will be populated by JavaScript with input fields -->
+                    </tbody>
+                </table>
+            </div>
+            <button onclick="updateHistoricalData()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Update Historical Data</button>
+        </div>
+    </div>
+
+    <!-- Financial Projections Tab -->
+    <div id="projections" class="tab-content">
+        <div class="section-card">
+            <h2 class="text-2xl font-bold mb-4">Financial Projections (2025-2029)</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <h3 class="text-lg font-semibold mb-3">Projection Parameters</h3>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Revenue Growth Rate</span>
+                            <span id="revenue-growth-value">10%</span>
+                        </div>
+                        <input type="range" id="revenue-growth" min="0" max="50" value="10" step="0.5" oninput="updateProjections()">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Gross Margin</span>
+                            <span id="gross-margin-value">65%</span>
+                        </div>
+                        <input type="range" id="gross-margin" min="20" max="90" value="65" step="0.5" oninput="updateProjections()">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>SG&A (% of Revenue)</span>
+                            <span id="sga-percent-value">25%</span>
+                        </div>
+                        <input type="range" id="sga-percent" min="5" max="50" value="25" step="0.5" oninput="updateProjections()">
+                    </div>
+                </div>
+                <div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>R&D (% of Revenue)</span>
+                            <span id="rd-percent-value">10%</span>
+                        </div>
+                        <input type="range" id="rd-percent" min="0" max="30" value="10" step="0.5" oninput="updateProjections()">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>CapEx (% of Revenue)</span>
+                            <span id="capex-percent-value">8%</span>
+                        </div>
+                        <input type="range" id="capex-percent" min="1" max="20" value="8" step="0.5" oninput="updateProjections()">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Tax Rate</span>
+                            <span id="tax-rate-value">25%</span>
+                        </div>
+                        <input type="range" id="tax-rate" min="10" max="40" value="25" step="0.5" oninput="updateProjections()">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Working Capital (% of Revenue)</span>
+                            <span id="wc-percent-value">15%</span>
+                        </div>
+                        <input type="range" id="wc-percent" min="5" max="30" value="15" step="0.5" oninput="updateProjections()">
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="text-xl font-semibold mb-3">Projected Income Statement ($000s)</h3>
+            <div class="overflow-x-auto mb-6">
+                <table class="min-w-full">
+                    <thead>
+                        <tr>
+                            <th>Line Item</th>
+                            <th>2025</th>
+                            <th>2026</th>
+                            <th>2027</th>
+                            <th>2028</th>
+                            <th>2029</th>
+                        </tr>
+                    </thead>
+                    <tbody id="income-statement-projected">
+                        <!-- Will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 class="text-xl font-semibold mb-3">Projected Balance Sheet ($000s)</h3>
+            <div class="overflow-x-auto mb-6">
+                <table class="min-w-full">
+                    <thead>
+                        <tr>
+                            <th>Line Item</th>
+                            <th>2025</th>
+                            <th>2026</th>
+                            <th>2027</th>
+                            <th>2028</th>
+                            <th>2029</th>
+                        </tr>
+                    </thead>
+                    <tbody id="balance-sheet-projected">
+                        <!-- Will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 class="text-xl font-semibold mb-3">Projected Cash Flow Statement ($000s)</h3>
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <tr>
+                            <th>Line Item</th>
+                            <th>2025</th>
+                            <th>2026</th>
+                            <th>2027</th>
+                            <th>2028</th>
+                            <th>2029</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cash-flow-projected">
+                        <!-- Will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Valuation Tab -->
+    <div id="valuation" class="tab-content">
+        <div class="section-card">
+            <h2 class="text-2xl font-bold mb-4">Company Valuation</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <h3 class="text-lg font-semibold mb-3">Valuation Parameters</h3>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>WACC (Discount Rate)</span>
+                            <span id="wacc-value">12%</span>
+                        </div>
+                        <input type="range" id="wacc" min="5" max="25" value="12" step="0.5" oninput="updateValuation()">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Terminal Growth Rate</span>
+                            <span id="terminal-growth-value">3%</span>
+                        </div>
+                        <input type="range" id="terminal-growth" min="0" max="5" value="3" step="0.1" oninput="updateValuation()">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>EBITDA Multiple</span>
+                            <span id="ebitda-multiple-value">10x</span>
+                        </div>
+                        <input type="range" id="ebitda-multiple" min="5" max="20" value="10" step="0.5" oninput="updateValuation()">
+                    </div>
+                </div>
+                <div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Revenue Multiple</span>
+                            <span id="revenue-multiple-value">3x</span>
+                        </div>
+                        <input type="range" id="revenue-multiple" min="1" max="10" value="3" step="0.1" oninput="updateValuation()">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Book Value Multiple</span>
+                            <span id="book-multiple-value">2x</span>
+                        </div>
+                        <input type="range" id="book-multiple" min="0.5" max="5" value="2" step="0.1" oninput="updateValuation()">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>PE Multiple</span>
+                            <span id="pe-multiple-value">15x</span>
+                        </div>
+                        <input type="range" id="pe-multiple" min="5" max="30" value="15" step="0.5" oninput="updateValuation()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="metric-card">
+                    <div class="metric-value" id="dcf-value">$0</div>
+                    <div class="metric-label">DCF Valuation</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="ebitda-value">$0</div>
+                    <div class="metric-label">EBITDA Multiple Valuation</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="revenue-value">$0</div>
+                    <div class="metric-label">Revenue Multiple Valuation</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="book-value">$0</div>
+                    <div class="metric-label">Book Value Multiple Valuation</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="valuation-chart"></canvas>
+            </div>
+
+            <h3 class="text-xl font-semibold mb-3">Valuation Details</h3>
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <tr>
+                            <th>Valuation Method</th>
+                            <th>Enterprise Value ($000s)</th>
+                            <th>Equity Value ($000s)</th>
+                            <th>Equity Value per Share</th>
+                            <th>Key Drivers</th>
+                        </tr>
+                    </thead>
+                    <tbody id="valuation-details">
+                        <!-- Will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Investment Modeling Tab -->
+    <div id="investment" class="tab-content">
+        <div class="section-card">
+            <h2 class="text-2xl font-bold mb-4">Investment & Financing Modeling</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <h3 class="text-lg font-semibold mb-3">Investment Parameters</h3>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Investment Amount ($000s)</span>
+                            <span id="investment-amount-value">$10,000</span>
+                        </div>
+                        <input type="range" id="investment-amount" min="1000" max="50000" value="10000" step="1000" oninput="updateInvestment()">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Equity Percentage</span>
+                            <span id="equity-percent-value">60%</span>
+                        </div>
+                        <input type="range" id="equity-percent" min="0" max="100" value="60" step="5" oninput="updateInvestment()">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Debt Interest Rate</span>
+                            <span id="debt-interest-value">8%</span>
+                        </div>
+                        <input type="range" id="debt-interest" min="3" max="15" value="8" step="0.5" oninput="updateInvestment()">
+                    </div>
+                </div>
+                <div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Exit Year</span>
+                            <span id="exit-year-value">2029 (Year 5)</span>
+                        </div>
+                        <input type="range" id="exit-year" min="1" max="5" value="5" step="1" oninput="updateInvestment()">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Exit Multiple (EBITDA)</span>
+                            <span id="exit-multiple-value">10x</span>
+                        </div>
+                        <input type="range" id="exit-multiple" min="5" max="20" value="10" step="0.5" oninput="updateInvestment()">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Ownership Stake</span>
+                            <span id="ownership-stake-value">30%</span>
+                        </div>
+                        <input type="range" id="ownership-stake" min="5" max="100" value="30" step="5" oninput="updateInvestment()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="metric-card">
+                    <div class="metric-value" id="irr-value">0%</div>
+                    <div class="metric-label">Internal Rate of Return (IRR)</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="moic-value">0.0x</div>
+                    <div class="metric-label">Multiple on Invested Capital</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="exit-value">$0</div>
+                    <div class="metric-label">Exit Valuation</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="investor-return">$0</div>
+                    <div class="metric-label">Investor Return</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <h3 class="text-xl font-semibold mb-3">Investment Structure</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Amount ($000s)</th>
+                                    <th>Percentage</th>
+                                </tr>
+                            </thead>
+                            <tbody id="investment-structure">
+                                <!-- Will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold mb-3">Return Summary</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full">
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Value</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody id="return-summary">
+                                <!-- Will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="investment-chart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Tab -->
+    <div id="charts" class="tab-content">
+        <div class="section-card">
+            <h2 class="text-2xl font-bold mb-4">Financial Analysis Charts</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="chart-container">
+                    <h3 class="text-lg font-semibold mb-2">Revenue & EBITDA Projection</h3>
+                    <canvas id="revenue-ebitda-chart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3 class="text-lg font-semibold mb-2">Profit Margins</h3>
+                    <canvas id="margins-chart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3 class="text-lg font-semibold mb-2">Balance Sheet Composition</h3>
+                    <canvas id="balance-sheet-chart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3 class="text-lg font-semibold mb-2">Cash Flow Components</h3>
+                    <canvas id="cash-flow-chart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3 class="text-lg font-semibold mb-2">Valuation Method Comparison</h3>
+                    <canvas id="valuation-methods-chart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3 class="text-lg font-semibold mb-2">Sensitivity Analysis</h3>
+                    <canvas id="sensitivity-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Historical financial data (pre-loaded)
+        const historicalData = {
+            incomeStatement: {
+                "Revenue": [45000, 52000, 61000],
+                "Cost of Goods Sold": [-15750, -18200, -21350],
+                "Gross Profit": [29250, 33800, 39650],
+                "SG&A Expenses": [-11250, -13000, -15250],
+                "R&D Expenses": [-4500, -5200, -6100],
+                "Other Operating Expenses": [-1350, -1560, -1830],
+                "EBITDA": [12150, 14040, 16470],
+                "Depreciation & Amortization": [-3600, -4160, -4880],
+                "EBIT": [8550, 9880, 11590],
+                "Interest Expense": [-900, -1040, -1220],
+                "Income Before Taxes": [7650, 8840, 10370],
+                "Income Tax Expense": [-1913, -2210, -2593],
+                "Net Income": [5738, 6630, 7778]
+            },
+            balanceSheet: {
+                "Assets": [],
+                "Cash and Cash Equivalents": [9000, 10400, 12200],
+                "Accounts Receivable": [6750, 7800, 9150],
+                "Inventory": [4500, 5200, 6100],
+                "Other Current Assets": [2250, 2600, 3050],
+                "Total Current Assets": [22500, 26000, 30500],
+                "Property, Plant & Equipment": [36000, 41600, 48800],
+                "Accumulated Depreciation": [-10800, -14960, -19840],
+                "Net PP&E": [25200, 26640, 28960],
+                "Goodwill and Intangibles": [13500, 13500, 13500],
+                "Other Long-term Assets": [4500, 5200, 6100],
+                "Total Assets": [65700, 71340, 79060],
+                "Liabilities & Equity": [],
+                "Accounts Payable": [4500, 5200, 6100],
+                "Accrued Expenses": [3375, 3900, 4575],
+                "Short-term Debt": [2250, 2600, 3050],
+                "Other Current Liabilities": [1800, 2080, 2440],
+                "Total Current Liabilities": [11925, 13780, 16165],
+                "Long-term Debt": [15000, 17000, 19000],
+                "Other Long-term Liabilities": [4500, 5200, 6100],
+                "Total Liabilities": [31425, 35980, 41265],
+                "Common Stock": [10000, 10000, 10000],
+                "Retained Earnings": [24275, 25360, 27795],
+                "Total Equity": [34275, 35360, 37795],
+                "Total Liabilities & Equity": [65700, 71340, 79060]
+            },
+            cashFlow: {
+                "Net Income": [5738, 6630, 7778],
+                "Depreciation & Amortization": [3600, 4160, 4880],
+                "Changes in Working Capital": [-1350, -1560, -1830],
+                "Other Operating Activities": [675, 780, 915],
+                "Cash from Operating Activities": [8663, 10010, 11743],
+                "Capital Expenditures": [-3600, -4160, -4880],
+                "Acquisitions": [0, 0, 0],
+                "Other Investing Activities": [450, 520, 610],
+                "Cash from Investing Activities": [-3150, -3640, -4270],
+                "Debt Issuance (Repayment)": [1350, 2350, 2450],
+                "Equity Issuance (Buyback)": [0, 0, 0],
+                "Dividends Paid": [-2250, -2600, -3050],
+                "Other Financing Activities": [-675, -780, -915],
+                "Cash from Financing Activities": [-1575, -1030, -1515],
+                "Net Change in Cash": [3938, 5340, 5958],
+                "Beginning Cash Balance": [5062, 9000, 14340],
+                "Ending Cash Balance": [9000, 14340, 20298]
+            }
+        };
+
+        // Function to format numbers for display
+        function formatNumber(number, isCurrency = false, isPercentage = false, decimals = 0) {
+            if (isPercentage) {
+                return number.toFixed(1) + '%';
+            } else if (isCurrency) {
+                return '$' + number.toLocaleString('en-US', {
+                    minimumFractionDigits: decimals,
+                    maximumFractionDigits: decimals
+                });
+            } else {
+                return number.toLocaleString('en-US', {
+                    minimumFractionDigits: decimals,
+                    maximumFractionDigits: decimals
+                });
+            }
+        }
+
+        // Projected financial data structure
+        let projectedData = {
+            incomeStatement: {},
+            balanceSheet: {},
+            cashFlow: {}
+        };
+
+        // Valuation results
+        let valuationResults = {};
+
+        // Investment results
+        let investmentResults = {};
+
+        // Load historical data into editable tables
+        function loadHistoricalData() {
+            const incomeTable = document.getElementById('income-statement-historical-editable');
+            const balanceTable = document.getElementById('balance-sheet-historical-editable');
+            const cashFlowTable = document.getElementById('cash-flow-historical-editable');
+            
+            // Load Income Statement
+            incomeTable.innerHTML = '';
+            Object.keys(historicalData.incomeStatement).forEach(item => {
+                const row = document.createElement('tr');
+                const itemCell = document.createElement('td');
+                itemCell.textContent = item;
+                row.appendChild(itemCell);
+                
+                for (let i = 0; i < 3; i++) {
+                    const valueCell = document.createElement('td');
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.value = historicalData.incomeStatement[item][i];
+                    input.oninput = function() {
+                        historicalData.incomeStatement[item][i] = parseFloat(this.value);
+                        updateHistoricalData();
+                    };
+                    valueCell.appendChild(input);
+                    row.appendChild(valueCell);
+                }
+                
+                incomeTable.appendChild(row);
+            });
+            
+            // Load Balance Sheet
+            balanceTable.innerHTML = '';
+            Object.keys(historicalData.balanceSheet).forEach(item => {
+                const row = document.createElement('tr');
+                const itemCell = document.createElement('td');
+                itemCell.textContent = item;
+                row.appendChild(itemCell);
+                
+                if (item === "Assets" || item === "Liabilities & Equity") {
+                    for (let i = 0; i < 3; i++) {
+                        const valueCell = document.createElement('td');
+                        valueCell.textContent = '';
+                        row.appendChild(valueCell);
+                    }
+                } else {
+                    for (let i = 0; i < 3; i++) {
+                        const valueCell = document.createElement('td');
+                        const input = document.createElement('input');
+                        input.type = 'number';
+                        if (historicalData.balanceSheet[item] && historicalData.balanceSheet[item][i] !== undefined) {
+                            input.value = historicalData.balanceSheet[item][i];
+                        } else {
+                            input.value = '';
+                        }
+                        input.oninput = function() {
+                            if (this.value === '') {
+                                historicalData.balanceSheet[item][i] = undefined;
+                            } else {
+                                historicalData.balanceSheet[item][i] = parseFloat(this.value);
+                            }
+                            updateHistoricalData();
+                        };
+                        valueCell.appendChild(input);
+                        row.appendChild(valueCell);
+                    }
+                }
+                
+                balanceTable.appendChild(row);
+            });
+            
+            // Load Cash Flow
+            cashFlowTable.innerHTML = '';
+            Object.keys(historicalData.cashFlow).forEach(item => {
+                const row = document.createElement('tr');
+                const itemCell = document.createElement('td');
+                itemCell.textContent = item;
+                row.appendChild(itemCell);
+                
+                for (let i = 0; i < 3; i++) {
+                    const valueCell = document.createElement('td');
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.value = historicalData.cashFlow[item][i];
+                    input.oninput = function() {
+                        historicalData.cashFlow[item][i] = parseFloat(this.value);
+                        updateHistoricalData();
+                    };
+                    valueCell.appendChild(input);
+                    row.appendChild(valueCell);
+                }
+                
+                cashFlowTable.appendChild(row);
+            });
+        }
+
+        // Update historical data and recalculate projections
+        function updateHistoricalData() {
+            autoTabulate();
+            projectFinancials();
+            displayProjections();
+            calculateValuation();
+            calculateInvestment();
+            updateCharts();
+            validateFinancialStatements();
+        }
+
+        // Project financial data
+        function projectFinancials() {
+            // Get parameters from sliders
+            const revenueGrowth = parseFloat(document.getElementById('revenue-growth').value) / 100;
+            const grossMargin = parseFloat(document.getElementById('gross-margin').value) / 100;
+            const sgaPercent = parseFloat(document.getElementById('sga-percent').value) / 100;
+            const rdPercent = parseFloat(document.getElementById('rd-percent').value) / 100;
+            const capexPercent = parseFloat(document.getElementById('capex-percent').value) / 100;
+            const taxRate = parseFloat(document.getElementById('tax-rate').value) / 100;
+            const wcPercent = parseFloat(document.getElementById('wc-percent').value) / 100;
+
+            // Projection years
+            const years = 5;
+            
+            // Initialize projection objects
+            projectedData.incomeStatement = {
+                "Revenue": [],
+                "Cost of Goods Sold": [],
+                "Gross Profit": [],
+                "SG&A Expenses": [],
+                "R&D Expenses": [],
+                "Other Operating Expenses": [],
+                "EBITDA": [],
+                "Depreciation & Amortization": [],
+                "EBIT": [],
+                "Interest Expense": [],
+                "Income Before Taxes": [],
+                "Income Tax Expense": [],
+                "Net Income": []
+            };
+            
+            projectedData.balanceSheet = {
+                "Assets": [],
+                "Cash and Cash Equivalents": [],
+                "Accounts Receivable": [],
+                "Inventory": [],
+                "Other Current Assets": [],
+                "Total Current Assets": [],
+                "Property, Plant & Equipment": [],
+                "Accumulated Depreciation": [],
+                "Net PP&E": [],
+                "Goodwill and Intangibles": [],
+                "Other Long-term Assets": [],
+                "Total Assets": [],
+                "Liabilities & Equity": [],
+                "Accounts Payable": [],
+                "Accrued Expenses": [],
+                "Short-term Debt": [],
+                "Other Current Liabilities": [],
+                "Total Current Liabilities": [],
+                "Long-term Debt": [],
+                "Other Long-term Liabilities": [],
+                "Total Liabilities": [],
+                "Common Stock": [],
+                "Retained Earnings": [],
+                "Total Equity": [],
+                "Total Liabilities & Equity": []
+            };
+            
+            projectedData.cashFlow = {
+                "Net Income": [],
+                "Depreciation & Amortization": [],
+                "Changes in Working Capital": [],
+                "Other Operating Activities": [],
+                "Cash from Operating Activities": [],
+                "Capital Expenditures": [],
+                "Acquisitions": [],
+                "Other Investing Activities": [],
+                "Cash from Investing Activities": [],
+                "Debt Issuance (Repayment)": [],
+                "Equity Issuance (Buyback)": [],
+                "Dividends Paid": [],
+                "Other Financing Activities": [],
+                "Cash from Financing Activities": [],
+                "Net Change in Cash": [],
+                "Beginning Cash Balance": [],
+                "Ending Cash Balance": []
+            };
+
+            // Get last year's data
+            const lastYearRevenue = historicalData.incomeStatement["Revenue"][2];
+            const lastYearPPE = historicalData.balanceSheet["Property, Plant & Equipment"][2];
+            const lastYearAccumDep = historicalData.balanceSheet["Accumulated Depreciation"][2];
+            const lastYearCash = historicalData.cashFlow["Ending Cash Balance"][2];
+            const lastYearRetainedEarnings = historicalData.balanceSheet["Retained Earnings"][2];
+            
+            // Project Income Statement
+            for (let i = 0; i < years; i++) {
+                // Revenue grows at the specified rate
+                const revenue = i === 0 ? 
+                    lastYearRevenue * (1 + revenueGrowth) : 
+                    projectedData.incomeStatement["Revenue"][i-1] * (1 + revenueGrowth);
+                projectedData.incomeStatement["Revenue"].push(revenue);
+                
+                // COGS based on gross margin
+                const cogs = -revenue * (1 - grossMargin);
+                projectedData.incomeStatement["Cost of Goods Sold"].push(cogs);
+                
+                // Gross Profit
+                const grossProfit = revenue + cogs;
+                projectedData.incomeStatement["Gross Profit"].push(grossProfit);
+                
+                // SG&A expenses as percent of revenue
+                const sga = -revenue * sgaPercent;
+                projectedData.incomeStatement["SG&A Expenses"].push(sga);
+                
+                // R&D expenses as percent of revenue
+                const rd = -revenue * rdPercent;
+                projectedData.incomeStatement["R&D Expenses"].push(rd);
+                
+                // Other operating expenses
+                const otherOpEx = -revenue * 0.03; // 3% of revenue
+                projectedData.incomeStatement["Other Operating Expenses"].push(otherOpEx);
+                
+                // EBITDA
+                const ebitda = grossProfit + sga + rd + otherOpEx;
+                projectedData.incomeStatement["EBITDA"].push(ebitda);
+                
+                // Depreciation grows with capital expenditures
+                const depreciation = i === 0 ?
+                    historicalData.incomeStatement["Depreciation & Amortization"][2] * (1 + revenueGrowth * 0.5) :
+                    projectedData.incomeStatement["Depreciation & Amortization"][i-1] * (1 + revenueGrowth * 0.5);
+                projectedData.incomeStatement["Depreciation & Amortization"].push(depreciation);
+                
+                // EBIT
+                const ebit = ebitda + depreciation;
+                projectedData.incomeStatement["EBIT"].push(ebit);
+                
+                // Interest expense grows with debt
+                const interest = i === 0 ?
+                    historicalData.incomeStatement["Interest Expense"][2] * (1 + revenueGrowth * 0.3) :
+                    projectedData.incomeStatement["Interest Expense"][i-1] * (1 + revenueGrowth * 0.3);
+                projectedData.incomeStatement["Interest Expense"].push(interest);
+                
+                // Income before taxes
+                const ebt = ebit + interest;
+                projectedData.incomeStatement["Income Before Taxes"].push(ebt);
+                
+                // Income tax expense
+                const tax = ebt * -taxRate;
+                projectedData.incomeStatement["Income Tax Expense"].push(tax);
+                
+                // Net income
+                const netIncome = ebt + tax;
+                projectedData.incomeStatement["Net Income"].push(netIncome);
+            }
+            
+            // Project Balance Sheet
+            for (let i = 0; i < years; i++) {
+                const revenue = projectedData.incomeStatement["Revenue"][i];
+                const netIncome = projectedData.incomeStatement["Net Income"][i];
+                
+                // Current assets based on revenue
+                const cash = i === 0 ? 
+                    lastYearCash * (1 + revenueGrowth * 0.8) : 
+                    projectedData.balanceSheet["Cash and Cash Equivalents"][i-1] * (1 + revenueGrowth * 0.8);
+                projectedData.balanceSheet["Cash and Cash Equivalents"].push(cash);
+                
+                const receivables = revenue * 0.15; // 15% of revenue
+                projectedData.balanceSheet["Accounts Receivable"].push(receivables);
+                
+                const inventory = revenue * 0.1; // 10% of revenue
+                projectedData.balanceSheet["Inventory"].push(inventory);
+                
+                const otherCA = revenue * 0.05; // 5% of revenue
+                projectedData.balanceSheet["Other Current Assets"].push(otherCA);
+                
+                const totalCA = cash + receivables + inventory + otherCA;
+                projectedData.balanceSheet["Total Current Assets"].push(totalCA);
+                
+                // Fixed assets
+                const grossPPE = i === 0 ?
+                    lastYearPPE * (1 + capexPercent) :
+                    projectedData.balanceSheet["Property, Plant & Equipment"][i-1] * (1 + capexPercent);
+                projectedData.balanceSheet["Property, Plant & Equipment"].push(grossPPE);
+                
+                const accumDep = i === 0 ?
+                    lastYearAccumDep + Math.abs(projectedData.incomeStatement["Depreciation & Amortization"][i]) :
+                    projectedData.balanceSheet["Accumulated Depreciation"][i-1] + Math.abs(projectedData.incomeStatement["Depreciation & Amortization"][i]);
+                projectedData.balanceSheet["Accumulated Depreciation"].push(-accumDep);
+                
+                const netPPE = grossPPE - accumDep;
+                projectedData.balanceSheet["Net PP&E"].push(netPPE);
+                
+                // Goodwill and other assets
+                const goodwill = 13500; // Constant
+                projectedData.balanceSheet["Goodwill and Intangibles"].push(goodwill);
+                
+                const otherLTA = revenue * 0.1;
+                projectedData.balanceSheet["Other Long-term Assets"].push(otherLTA);
+                
+                const totalAssets = totalCA + netPPE + goodwill + otherLTA;
+                projectedData.balanceSheet["Total Assets"].push(totalAssets);
+                
+                // Liabilities
+                const ap = revenue * 0.1;
+                projectedData.balanceSheet["Accounts Payable"].push(ap);
+                
+                const accrued = revenue * 0.075;
+                projectedData.balanceSheet["Accrued Expenses"].push(accrued);
+                
+                const shortDebt = revenue * 0.05;
+                projectedData.balanceSheet["Short-term Debt"].push(shortDebt);
+                
+                const otherCL = revenue * 0.04;
+                projectedData.balanceSheet["Other Current Liabilities"].push(otherCL);
+                
+                const totalCL = ap + accrued + shortDebt + otherCL;
+                projectedData.balanceSheet["Total Current Liabilities"].push(totalCL);
+                
+                const longDebt = totalAssets * 0.24; // Debt is 24% of assets
+                projectedData.balanceSheet["Long-term Debt"].push(longDebt);
+                
+                const otherLTL = revenue * 0.1;
+                projectedData.balanceSheet["Other Long-term Liabilities"].push(otherLTL);
+                
+                const totalLiab = totalCL + longDebt + otherLTL;
+                projectedData.balanceSheet["Total Liabilities"].push(totalLiab);
+                
+                // Equity
+                const commonStock = 10000; // Constant
+                projectedData.balanceSheet["Common Stock"].push(commonStock);
+                
+                const retainedEarnings = i === 0 ?
+                    lastYearRetainedEarnings + netIncome - (revenue * 0.05) : // 5% dividend payout
+                    projectedData.balanceSheet["Retained Earnings"][i-1] + netIncome - (revenue * 0.05);
+                projectedData.balanceSheet["Retained Earnings"].push(retainedEarnings);
+                
+                const totalEquity = commonStock + retainedEarnings;
+                projectedData.balanceSheet["Total Equity"].push(totalEquity);
+                
+                const totalLiabEquity = totalLiab + totalEquity;
+                projectedData.balanceSheet["Total Liabilities & Equity"].push(totalLiabEquity);
+            }
+            
+            // Project Cash Flow Statement
+            for (let i = 0; i < years; i++) {
+                const netIncome = projectedData.incomeStatement["Net Income"][i];
+                const depreciation = Math.abs(projectedData.incomeStatement["Depreciation & Amortization"][i]);
+                const revenue = projectedData.incomeStatement["Revenue"][i];
+                
+                // Cash from Operations
+                projectedData.cashFlow["Net Income"].push(netIncome);
+                projectedData.cashFlow["Depreciation & Amortization"].push(depreciation);
+                
+                const wcChange = -revenue * wcPercent * 0.1; // Working capital grows with revenue
+                projectedData.cashFlow["Changes in Working Capital"].push(wcChange);
+                
+                const otherOps = revenue * 0.015;
+                projectedData.cashFlow["Other Operating Activities"].push(otherOps);
+                
+                const cfOps = netIncome + depreciation + wcChange + otherOps;
+                projectedData.cashFlow["Cash from Operating Activities"].push(cfOps);
+                
+                // Cash from Investing
+                const capex = -revenue * capexPercent;
+                projectedData.cashFlow["Capital Expenditures"].push(capex);
+                
+                const acquisitions = 0; // No acquisitions in projection
+                projectedData.cashFlow["Acquisitions"].push(acquisitions);
+                
+                const otherInv = revenue * 0.01;
+                projectedData.cashFlow["Other Investing Activities"].push(otherInv);
+                
+                const cfInv = capex + acquisitions + otherInv;
+                projectedData.cashFlow["Cash from Investing Activities"].push(cfInv);
+                
+                // Cash from Financing
+                const debtChange = i === 0 ?
+                    (projectedData.balanceSheet["Long-term Debt"][i] + projectedData.balanceSheet["Short-term Debt"][i]) -
+                    (historicalData.balanceSheet["Long-term Debt"][2] + historicalData.balanceSheet["Short-term Debt"][2]) :
+                    (projectedData.balanceSheet["Long-term Debt"][i] + projectedData.balanceSheet["Short-term Debt"][i]) -
+                    (projectedData.balanceSheet["Long-term Debt"][i-1] + projectedData.balanceSheet["Short-term Debt"][i-1]);
+                projectedData.cashFlow["Debt Issuance (Repayment)"].push(debtChange);
+                
+                const equity = 0; // No new equity
+                projectedData.cashFlow["Equity Issuance (Buyback)"].push(equity);
+                
+                const dividends = -revenue * 0.05; // 5% of revenue as dividends
+                projectedData.cashFlow["Dividends Paid"].push(dividends);
+                
+                const otherFin = -revenue * 0.015;
+                projectedData.cashFlow["Other Financing Activities"].push(otherFin);
+                
+                const cfFin = debtChange + equity + dividends + otherFin;
+                projectedData.cashFlow["Cash from Financing Activities"].push(cfFin);
+                
+                // Net changes in cash
+                const netCashChange = cfOps + cfInv + cfFin;
+                projectedData.cashFlow["Net Change in Cash"].push(netCashChange);
+                
+                const beginCash = i === 0 ?
+                    lastYearCash :
+                    projectedData.cashFlow["Ending Cash Balance"][i-1];
+                projectedData.cashFlow["Beginning Cash Balance"].push(beginCash);
+                
+                const endCash = beginCash + netCashChange;
+                projectedData.cashFlow["Ending Cash Balance"].push(endCash);
+            }
+        }
+
+        // Display projected financial data
+        function displayProjections() {
+            const incomeTable = document.getElementById('income-statement-projected');
+            const balanceTable = document.getElementById('balance-sheet-projected');
+            const cashFlowTable = document.getElementById('cash-flow-projected');
+            
+            // Display Income Statement
+            incomeTable.innerHTML = '';
+            Object.keys(projectedData.incomeStatement).forEach(item => {
+                const row = document.createElement('tr');
+                const itemCell = document.createElement('td');
+                itemCell.textContent = item;
+                row.appendChild(itemCell);
+                
+                for (let i = 0; i < 5; i++) {
+                    const valueCell = document.createElement('td');
+                    valueCell.textContent = formatNumber(projectedData.incomeStatement[item][i], true);
+                    if (item === "Revenue" || item === "Gross Profit" || item === "EBITDA" || item === "EBIT" || item === "Net Income") {
+                        row.classList.add('financial-total');
+                    }
+                    row.appendChild(valueCell);
+                }
+                
+                incomeTable.appendChild(row);
+            });
+            
+            // Display Balance Sheet
+            balanceTable.innerHTML = '';
+            Object.keys(projectedData.balanceSheet).forEach(item => {
+                const row = document.createElement('tr');
+                const itemCell = document.createElement('td');
+                itemCell.textContent = item;
+                row.appendChild(itemCell);
+                
+                if (item === "Assets" || item === "Liabilities & Equity") {
+                    row.classList.add('financial-header');
+                    for (let i = 0; i < 5; i++) {
+                        const valueCell = document.createElement('td');
+                        valueCell.textContent = '';
+                        row.appendChild(valueCell);
+                    }
+                } else {
+                    for (let i = 0; i < 5; i++) {
+                        const valueCell = document.createElement('td');
+                        if (projectedData.balanceSheet[item] && projectedData.balanceSheet[item][i] !== undefined) {
+                            valueCell.textContent = formatNumber(projectedData.balanceSheet[item][i], true);
+                        } else {
+                            valueCell.textContent = '';
+                        }
+                        if (item === "Total Current Assets" || item === "Total Assets" || 
+                            item === "Total Current Liabilities" || item === "Total Liabilities" || 
+                            item === "Total Equity" || item === "Total Liabilities & Equity") {
+                            row.classList.add('financial-total');
+                        }
+                        row.appendChild(valueCell);
+                    }
+                }
+                
+                balanceTable.appendChild(row);
+            });
+            
+            // Display Cash Flow
+            cashFlowTable.innerHTML = '';
+            Object.keys(projectedData.cashFlow).forEach(item => {
+                const row = document.createElement('tr');
+                const itemCell = document.createElement('td');
+                itemCell.textContent = item;
+                row.appendChild(itemCell);
+                
+                for (let i = 0; i < 5; i++) {
+                    const valueCell = document.createElement('td');
+                    valueCell.textContent = formatNumber(projectedData.cashFlow[item][i], true);
+                    if (item === "Cash from Operating Activities" || item === "Cash from Investing Activities" || 
+                        item === "Cash from Financing Activities" || item === "Net Change in Cash" || 
+                        item === "Ending Cash Balance") {
+                        row.classList.add('financial-total');
+                    }
+                    row.appendChild(valueCell);
+                }
+                
+                cashFlowTable.appendChild(row);
+            });
+        }
+
+        // Calculate company valuation
+        function calculateValuation() {
+            // Get parameters from sliders
+            const wacc = parseFloat(document.getElementById('wacc').value) / 100;
+            const terminalGrowth = parseFloat(document.getElementById('terminal-growth').value) / 100;
+            const ebitdaMultiple = parseFloat(document.getElementById('ebitda-multiple').value);
+            const revenueMultiple = parseFloat(document.getElementById('revenue-multiple').value);
+            const bookMultiple = parseFloat(document.getElementById('book-multiple').value);
+            const peMultiple = parseFloat(document.getElementById('pe-multiple').value);
+            
+            // Get terminal year values
+            const terminalRevenue = projectedData.incomeStatement["Revenue"][4];
+            const terminalEBITDA = projectedData.incomeStatement["EBITDA"][4];
+            const terminalNetIncome = projectedData.incomeStatement["Net Income"][4];
+            const terminalBookValue = projectedData.balanceSheet["Total Equity"][4];
+            
+            // Get total debt and cash
+            const totalDebt = projectedData.balanceSheet["Long-term Debt"][4] + projectedData.balanceSheet["Short-term Debt"][4];
+            const cash = projectedData.balanceSheet["Cash and Cash Equivalents"][4];
+            
+            // Calculate free cash flows for DCF
+            const fcf = [];
+            for (let i = 0; i < 5; i++) {
+                const ebit = projectedData.incomeStatement["EBIT"][i];
+                const tax = ebit * -0.25; // Tax rate of 25%
+                const depreciation = Math.abs(projectedData.incomeStatement["Depreciation & Amortization"][i]);
+                const capex = Math.abs(projectedData.cashFlow["Capital Expenditures"][i]);
+                const wcChange = Math.abs(projectedData.cashFlow["Changes in Working Capital"][i]);
+                
+                const freeCashFlow = ebit + tax + depreciation - capex - wcChange;
+                fcf.push(freeCashFlow);
+            }
+            
+            // Calculate DCF valuation
+            let dcfValue = 0;
+            for (let i = 0; i < 5; i++) {
+                dcfValue += fcf[i] / Math.pow(1 + wacc, i + 1);
+            }
+            
+            // Terminal value (Gordon Growth Model)
+            const terminalValue = fcf[4] * (1 + terminalGrowth) / (wacc - terminalGrowth);
+            const discountedTerminalValue = terminalValue / Math.pow(1 + wacc, 5);
+            
+            // Enterprise Value from DCF
+            const enterpriseValueDCF = dcfValue + discountedTerminalValue;
+            
+            // Equity Value = Enterprise Value - Debt + Cash
+            const equityValueDCF = enterpriseValueDCF - totalDebt + cash;
+            
+            // EBITDA Multiple Valuation
+            const enterpriseValueEBITDA = terminalEBITDA * ebitdaMultiple;
+            const equityValueEBITDA = enterpriseValueEBITDA - totalDebt + cash;
+            
+            // Revenue Multiple Valuation
+            const enterpriseValueRevenue = terminalRevenue * revenueMultiple;
+            const equityValueRevenue = enterpriseValueRevenue - totalDebt + cash;
+            
+            // Book Value Multiple Valuation
+            const equityValueBook = terminalBookValue * bookMultiple;
+            
+            // PE Multiple Valuation
+            const equityValuePE = terminalNetIncome * peMultiple;
+            
+            // Store valuation results
+            valuationResults = {
+                dcf: {
+                    enterpriseValue: enterpriseValueDCF,
+                    equityValue: equityValueDCF,
+                    perShare: equityValueDCF / 10 // Assuming 10 million shares outstanding
+                },
+                ebitda: {
+                    enterpriseValue: enterpriseValueEBITDA,
+                    equityValue: equityValueEBITDA,
+                    perShare: equityValueEBITDA / 10
+                },
+                revenue: {
+                    enterpriseValue: enterpriseValueRevenue,
+                    equityValue: equityValueRevenue,
+                    perShare: equityValueRevenue / 10
+                },
+                book: {
+                    enterpriseValue: equityValueBook + totalDebt - cash,
+                    equityValue: equityValueBook,
+                    perShare: equityValueBook / 10
+                },
+                pe: {
+                    enterpriseValue: equityValuePE + totalDebt - cash,
+                    equityValue: equityValuePE,
+                    perShare: equityValuePE / 10
+                }
+            };
+            
+            // Display valuation results
+            document.getElementById('dcf-value').textContent = formatNumber(equityValueDCF / 1000, true, false, 1) + 'M';
+            document.getElementById('ebitda-value').textContent = formatNumber(equityValueEBITDA / 1000, true, false, 1) + 'M';
+            document.getElementById('revenue-value').textContent = formatNumber(equityValueRevenue / 1000, true, false, 1) + 'M';
+            document.getElementById('book-value').textContent = formatNumber(equityValueBook / 1000, true, false, 1) + 'M';
+            
+            // Update valuation details table
+            const valuationTable = document.getElementById('valuation-details');
+            valuationTable.innerHTML = '';
+            
+            // DCF Row
+            let row = document.createElement('tr');
+            let cell = document.createElement('td');
+            cell.textContent = 'Discounted Cash Flow (DCF)';
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = formatNumber(enterpriseValueDCF, true);
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = formatNumber(equityValueDCF, true);
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = formatNumber(equityValueDCF / 10, true, false, 2);
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = `WACC: ${wacc * 100}%, Terminal Growth: ${terminalGrowth * 100}%`;
+            row.appendChild(cell);
+            
+            valuationTable.appendChild(row);
+            
+            // EBITDA Multiple Row
+            row = document.createElement('tr');
+            cell = document.createElement('td');
+            cell.textContent = 'EBITDA Multiple';
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = formatNumber(enterpriseValueEBITDA, true);
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = formatNumber(equityValueEBITDA, true);
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = formatNumber(equityValueEBITDA / 10, true, false, 2);
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = `EBITDA: ${formatNumber(terminalEBITDA, true)}, Multiple: ${ebitdaMultiple}x`;
+            row.appendChild(cell);
+            
+            valuationTable.appendChild(row);
+            
+            // Revenue Multiple Row
+            row = document.createElement('tr');
+            cell = document.createElement('td');
+            cell.textContent = 'Revenue Multiple';
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = formatNumber(enterpriseValueRevenue, true);
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = formatNumber(equityValueRevenue, true);
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = formatNumber(equityValueRevenue / 10, true, false, 2);
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = `Revenue: ${formatNumber(terminalRevenue, true)}, Multiple: ${revenueMultiple}x`;
+            row.appendChild(cell);
+            
+            valuationTable.appendChild(row);
+            
+            // Book Value Multiple Row
+            row = document.createElement('tr');
+            cell = document.createElement('td');
+            cell.textContent = 'Book Value Multiple';
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = formatNumber(equityValueBook + totalDebt - cash, true);
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = formatNumber(equityValueBook, true);
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = formatNumber(equityValueBook / 10, true, false, 2);
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = `Book Value: ${formatNumber(terminalBookValue, true)}, Multiple: ${bookMultiple}x`;
+            row.appendChild(cell);
+            
+            valuationTable.appendChild(row);
+            
+            // Update valuation chart
+            updateValuationChart();
+        }
+
+        // Calculate investment returns
+        function calculateInvestment() {
+            // Get parameters from sliders
+            const investmentAmount = parseFloat(document.getElementById('investment-amount').value);
+            const equityPercent = parseFloat(document.getElementById('equity-percent').value) / 100;
+            const debtInterest = parseFloat(document.getElementById('debt-interest').value) / 100;
+            const exitYear = parseInt(document.getElementById('exit-year').value);
+            const exitMultiple = parseFloat(document.getElementById('exit-multiple').value);
+            const ownershipStake = parseFloat(document.getElementById('ownership-stake').value) / 100;
+            
+            // Calculate equity and debt components
+            const equityInvestment = investmentAmount * equityPercent;
+            const debtInvestment = investmentAmount * (1 - equityPercent);
+            
+            // Get exit year EBITDA
+            const exitYearEBITDA = projectedData.incomeStatement["EBITDA"][exitYear - 1];
+            
+            // Calculate exit enterprise value
+            const exitEnterpriseValue = exitYearEBITDA * exitMultiple;
+            
+            // Get exit year debt and cash
+            const exitDebt = projectedData.balanceSheet["Long-term Debt"][exitYear - 1] + 
+                           projectedData.balanceSheet["Short-term Debt"][exitYear - 1];
+            const exitCash = projectedData.balanceSheet["Cash and Cash Equivalents"][exitYear - 1];
+            
+            // Calculate exit equity value
+            const exitEquityValue = exitEnterpriseValue - exitDebt + exitCash;
+            
+            // Calculate investor's return
+            const equityReturn = exitEquityValue * ownershipStake;
+            
+            // Calculate debt return (principal + interest)
+            // Simple interest calculation for demonstration
+            const debtReturn = debtInvestment * (1 + debtInterest * exitYear);
+            
+            // Total return
+            const totalReturn = equityReturn + debtReturn;
+            
+            // Calculate IRR (simplified approach)
+            const totalInvestment = equityInvestment + debtInvestment;
+            const yearsHeld = exitYear;
+            const irr = Math.pow(totalReturn / totalInvestment, 1 / yearsHeld) - 1;
+            
+            // Calculate multiple on invested capital (MOIC)
+            const moic = totalReturn / totalInvestment;
+            
+            // Store investment results
+            investmentResults = {
+                investment: {
+                    total: investmentAmount,
+                    equity: equityInvestment,
+                    debt: debtInvestment
+                },
+                exit: {
+                    year: exitYear,
+                    enterpriseValue: exitEnterpriseValue,
+                    equityValue: exitEquityValue,
+                    equityReturn: equityReturn,
+                    debtReturn: debtReturn,
+                    totalReturn: totalReturn
+                },
+                returns: {
+                    irr: irr,
+                    moic: moic
+                }
+            };
+            
+            // Display investment results
+            document.getElementById('irr-value').textContent = formatNumber(irr * 100, false, true, 1) + '%';
+            document.getElementById('moic-value').textContent = formatNumber(moic, false, false, 1) + 'x';
+            document.getElementById('exit-value').textContent = formatNumber(exitEnterpriseValue / 1000, true, false, 1) + 'M';
+            document.getElementById('investor-return').textContent = formatNumber(totalReturn / 1000, true, false, 1) + 'M';
+            
+            // Update investment structure table
+            const investmentTable = document.getElementById('investment-structure');
+            investmentTable.innerHTML = '';
+            
+            // Equity Row
+            let row = document.createElement('tr');
+            let cell = document.createElement('td');
+            cell.textContent = 'Equity Investment';
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = formatNumber(equityInvestment, true);
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = formatNumber(equityPercent * 100, false, true) + '%';
+            row.appendChild(cell);
+            
+            investmentTable.appendChild(row);
+            
+            // Debt Row
+            row = document.createElement('tr');
+            cell = document.createElement('td');
+            cell.textContent = 'Debt Investment';
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = formatNumber(debtInvestment, true);
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = formatNumber((1 - equityPercent) * 100, false, true) + '%';
+            row.appendChild(cell);
+            
+            investmentTable.appendChild(row);
+            
+            // Total Row
+            row = document.createElement('tr');
+            row.classList.add('financial-total');
+            cell = document.createElement('td');
+            cell.textContent = 'Total Investment';
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = formatNumber(investmentAmount, true);
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = '100.0%';
+            row.appendChild(cell);
+            
+            investmentTable.appendChild(row);
+            
+            // Update return summary table
+            const returnTable = document.getElementById('return-summary');
+            returnTable.innerHTML = '';
+            
+            // Exit Timing Row
+            row = document.createElement('tr');
+            cell = document.createElement('td');
+            cell.textContent = 'Exit Timing';
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = `Year ${exitYear} (2024 + ${exitYear})`;
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = `Exit EBITDA: ${formatNumber(exitYearEBITDA, true)}`;
+            row.appendChild(cell);
+            
+            returnTable.appendChild(row);
+            
+            // Exit Valuation Row
+            row = document.createElement('tr');
+            cell = document.createElement('td');
+            cell.textContent = 'Exit Valuation';
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = formatNumber(exitEnterpriseValue, true);
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = `Multiple: ${exitMultiple}x EBITDA`;
+            row.appendChild(cell);
+            
+            returnTable.appendChild(row);
+            
+            // Equity Return Row
+            row = document.createElement('tr');
+            cell = document.createElement('td');
+            cell.textContent = 'Equity Return';
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = formatNumber(equityReturn, true);
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = `${formatNumber(ownershipStake * 100, false, true)}% ownership`;
+            row.appendChild(cell);
+            
+            returnTable.appendChild(row);
+            
+            // Debt Return Row
+            row = document.createElement('tr');
+            cell = document.createElement('td');
+            cell.textContent = 'Debt Return';
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = formatNumber(debtReturn, true);
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = `${formatNumber(debtInterest * 100, false, true)}% interest rate`;
+            row.appendChild(cell);
+            
+            returnTable.appendChild(row);
+            
+            // IRR Row
+            row = document.createElement('tr');
+            row.classList.add('financial-total');
+            cell = document.createElement('td');
+            cell.textContent = 'Total Return / IRR';
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = formatNumber(totalReturn, true);
+            row.appendChild(cell);
+            
+            cell = document.createElement('td');
+            cell.textContent = `IRR: ${formatNumber(irr * 100, false, true, 1)}%, MOIC: ${formatNumber(moic, false, false, 1)}x`;
+            row.appendChild(cell);
+            
+            returnTable.appendChild(row);
+            
+            // Update investment chart
+            updateInvestmentChart();
+        }
+
+        // Update charts
+        function updateCharts() {
+            updateRevenueEBITDAChart();
+            updateMarginsChart();
+            updateBalanceSheetChart();
+            updateCashFlowChart();
+            updateValuationMethodsChart();
+            updateSensitivityChart();
+        }
+
+        // Update the valuation chart
+        function updateValuationChart() {
+            const ctx = document.getElementById('valuation-chart').getContext('2d');
+            
+            // Get valuation data
+            const labels = ['DCF', 'EBITDA Multiple', 'Revenue Multiple', 'Book Value Multiple'];
+            const data = [
+                valuationResults.dcf.equityValue / 1000,
+                valuationResults.ebitda.equityValue / 1000,
+                valuationResults.revenue.equityValue / 1000,
+                valuationResults.book.equityValue / 1000
+            ];
+            
+            // If chart exists, destroy it
+            if (window.valuationChart) {
+                window.valuationChart.destroy();
+            }
+            
+            // Create chart
+            window.valuationChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Equity Value ($ millions)',
+                        data: data,
+                        backgroundColor: [
+                            'rgba(75, 192, 192, 0.6)',
+                            'rgba(54, 162, 235, 0.6)',
+                            'rgba(153, 102, 255, 0.6)',
+                            'rgba(255, 159, 64, 0.6)'
+                        ],
+                        borderColor: [
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Equity Value ($ millions)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Company Valuation by Method'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update the investment chart
+        function updateInvestmentChart() {
+            const ctx = document.getElementById('investment-chart').getContext('2d');
+            
+            // Get investment data
+            const exitYear = investmentResults.exit.year;
+            
+            // If chart exists, destroy it
+            if (window.investmentChart) {
+                window.investmentChart.destroy();
+            }
+            
+            // Create data for year-by-year growth of investment
+            const labels = [];
+            const equityData = [];
+            const debtData = [];
+            
+            // Initial investment
+            labels.push('Initial');
+            equityData.push(investmentResults.investment.equity / 1000);
+            debtData.push(investmentResults.investment.debt / 1000);
+            
+            // Year-by-year growth (simplified)
+            for (let i = 1; i <= exitYear; i++) {
+                labels.push(`Year ${i}`);
+                
+                // Equity grows with company value
+                const equityGrowthRate = 0.15; // 15% per year
+                const equityValue = investmentResults.investment.equity * Math.pow(1 + equityGrowthRate, i) / 1000;
+                equityData.push(equityValue);
+                
+                // Debt grows with interest
+                const debtInterest = parseFloat(document.getElementById('debt-interest').value) / 100;
+                const debtValue = investmentResults.investment.debt * (1 + debtInterest * i) / 1000;
+                debtData.push(debtValue);
+            }
+            
+            // Create chart
+            window.investmentChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Equity Value ($ millions)',
+                            data: equityData,
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 2,
+                            fill: true
+                        },
+                        {
+                            label: 'Debt Value ($ millions)',
+                            data: debtData,
+                            backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                            borderColor: 'rgba(255, 159, 64, 1)',
+                            borderWidth: 2,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Value ($ millions)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Investment Growth Projection'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update Revenue & EBITDA chart
+        function updateRevenueEBITDAChart() {
+            const ctx = document.getElementById('revenue-ebitda-chart').getContext('2d');
+            
+            // Combine historical and projected data
+            const labels = ['2022', '2023', '2024', '2025', '2026', '2027', '2028', '2029'];
+            const revenueData = [
+                ...historicalData.incomeStatement.Revenue,
+                ...projectedData.incomeStatement.Revenue
+            ];
+            const ebitdaData = [
+                ...historicalData.incomeStatement.EBITDA,
+                ...projectedData.incomeStatement.EBITDA
+            ];
+            
+            // If chart exists, destroy it
+            if (window.revenueEBITDAChart) {
+                window.revenueEBITDAChart.destroy();
+            }
+            
+            // Create chart
+            window.revenueEBITDAChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Revenue',
+                            data: revenueData,
+                            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1,
+                            order: 2
+                        },
+                        {
+                            label: 'EBITDA',
+                            data: ebitdaData,
+                            backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1,
+                            order: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Amount ($000s)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Revenue & EBITDA Trends'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update Margins chart
+        function updateMarginsChart() {
+            const ctx = document.getElementById('margins-chart').getContext('2d');
+            
+            // Combine historical and projected data
+            const labels = ['2022', '2023', '2024', '2025', '2026', '2027', '2028', '2029'];
+            
+            // Calculate margins
+            const grossMargin = [];
+            const ebitdaMargin = [];
+            const netMargin = [];
+            
+            // Historical margins
+            for (let i = 0; i < 3; i++) {
+                grossMargin.push(historicalData.incomeStatement["Gross Profit"][i] / historicalData.incomeStatement.Revenue[i] * 100);
+                ebitdaMargin.push(historicalData.incomeStatement.EBITDA[i] / historicalData.incomeStatement.Revenue[i] * 100);
+                netMargin.push(historicalData.incomeStatement["Net Income"][i] / historicalData.incomeStatement.Revenue[i] * 100);
+            }
+            
+            // Projected margins
+            for (let i = 0; i < 5; i++) {
+                grossMargin.push(projectedData.incomeStatement["Gross Profit"][i] / projectedData.incomeStatement.Revenue[i] * 100);
+                ebitdaMargin.push(projectedData.incomeStatement.EBITDA[i] / projectedData.incomeStatement.Revenue[i] * 100);
+                netMargin.push(projectedData.incomeStatement["Net Income"][i] / projectedData.incomeStatement.Revenue[i] * 100);
+            }
+            
+            // If chart exists, destroy it
+            if (window.marginsChart) {
+                window.marginsChart.destroy();
+            }
+            
+            // Create chart
+            window.marginsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Gross Margin',
+                            data: grossMargin,
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 2,
+                            fill: false
+                        },
+                        {
+                            label: 'EBITDA Margin',
+                            data: ebitdaMargin,
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 2,
+                            fill: false
+                        },
+                        {
+                            label: 'Net Margin',
+                            data: netMargin,
+                            backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                            borderColor: 'rgba(153, 102, 255, 1)',
+                            borderWidth: 2,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Margin (%)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Profit Margin Trends'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update Balance Sheet chart
+        function updateBalanceSheetChart() {
+            const ctx = document.getElementById('balance-sheet-chart').getContext('2d');
+            
+            // Create data for latest year (2029)
+            const labels = ['Current Assets', 'Fixed Assets', 'Other Assets', 'Current Liabilities', 'Long-term Debt', 'Equity'];
+            const data = [
+                projectedData.balanceSheet["Total Current Assets"][4],
+                projectedData.balanceSheet["Net PP&E"][4],
+                projectedData.balanceSheet["Goodwill and Intangibles"][4] + projectedData.balanceSheet["Other Long-term Assets"][4],
+                projectedData.balanceSheet["Total Current Liabilities"][4],
+                projectedData.balanceSheet["Long-term Debt"][4] + projectedData.balanceSheet["Other Long-term Liabilities"][4],
+                projectedData.balanceSheet["Total Equity"][4]
+            ];
+            
+            // If chart exists, destroy it
+            if (window.balanceSheetChart) {
+                window.balanceSheetChart.destroy();
+            }
+            
+            // Create chart
+            window.balanceSheetChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data.map(Math.abs),
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.6)',
+                            'rgba(75, 192, 192, 0.6)',
+                            'rgba(153, 102, 255, 0.6)',
+                            'rgba(255, 99, 132, 0.6)',
+                            'rgba(255, 159, 64, 0.6)',
+                            'rgba(255, 205, 86, 0.6)'
+                        ],
+                        borderColor: [
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(255, 159, 64, 1)',
+                            'rgba(255, 205, 86, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Balance Sheet Composition (2029)'
+                        },
+                        legend: {
+                            position: 'right'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update Cash Flow chart
+        function updateCashFlowChart() {
+            const ctx = document.getElementById('cash-flow-chart').getContext('2d');
+            
+            // Combine historical and projected data
+            const labels = ['2022', '2023', '2024', '2025', '2026', '2027', '2028', '2029'];
+            const operatingCF = [
+                ...historicalData.cashFlow["Cash from Operating Activities"],
+                ...projectedData.cashFlow["Cash from Operating Activities"]
+            ];
+            const investingCF = [
+                ...historicalData.cashFlow["Cash from Investing Activities"],
+                ...projectedData.cashFlow["Cash from Investing Activities"]
+            ];
+            const financingCF = [
+                ...historicalData.cashFlow["Cash from Financing Activities"],
+                ...projectedData.cashFlow["Cash from Financing Activities"]
+            ];
+            const netCF = [
+                ...historicalData.cashFlow["Net Change in Cash"],
+                ...projectedData.cashFlow["Net Change in Cash"]
+            ];
+            
+            // If chart exists, destroy it
+            if (window.cashFlowChart) {
+                window.cashFlowChart.destroy();
+            }
+            
+            // Create chart
+            window.cashFlowChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Operating Cash Flow',
+                            data: operatingCF,
+                            backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Investing Cash Flow',
+                            data: investingCF,
+                            backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Financing Cash Flow',
+                            data: financingCF,
+                            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Net Cash Flow',
+                            data: netCF,
+                            type: 'line',
+                            backgroundColor: 'rgba(255, 159, 64, 0.6)',
+                            borderColor: 'rgba(255, 159, 64, 1)',
+                            borderWidth: 2,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Cash Flow ($000s)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Cash Flow Components'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update Valuation Methods chart
+        function updateValuationMethodsChart() {
+            const ctx = document.getElementById('valuation-methods-chart').getContext('2d');
+            
+            // Get valuation data
+            const labels = ['DCF', 'EBITDA Multiple', 'Revenue Multiple', 'Book Value Multiple', 'PE Multiple'];
+            const enterpriseValue = [
+                valuationResults.dcf.enterpriseValue / 1000,
+                valuationResults.ebitda.enterpriseValue / 1000,
+                valuationResults.revenue.enterpriseValue / 1000,
+                valuationResults.book.enterpriseValue / 1000,
+                valuationResults.pe.enterpriseValue / 1000
+            ];
+            const equityValue = [
+                valuationResults.dcf.equityValue / 1000,
+                valuationResults.ebitda.equityValue / 1000,
+                valuationResults.revenue.equityValue / 1000,
+                valuationResults.book.equityValue / 1000,
+                valuationResults.pe.equityValue / 1000
+            ];
+            
+            // If chart exists, destroy it
+            if (window.valuationMethodsChart) {
+                window.valuationMethodsChart.destroy();
+            }
+            
+            // Create chart
+            window.valuationMethodsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Enterprise Value ($ millions)',
+                            data: enterpriseValue,
+                            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Equity Value ($ millions)',
+                            data: equityValue,
+                            backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Value ($ millions)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Valuation Method Comparison'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update Sensitivity Analysis chart
+        function updateSensitivityChart() {
+            const ctx = document.getElementById('sensitivity-chart').getContext('2d');
+            
+            // Create sensitivity data for DCF value based on different WACC and terminal growth rates
+            const waccRates = [0.08, 0.10, 0.12, 0.14, 0.16];
+            const growthRates = [0.01, 0.02, 0.03, 0.04, 0.05];
+            
+            const datasets = [];
+            const baseWacc = parseFloat(document.getElementById('wacc').value) / 100;
+            const baseTerminalGrowth = parseFloat(document.getElementById('terminal-growth').value) / 100;
+            
+            // Simplified DCF calculation for sensitivity
+            function simplifiedDCF(wacc, terminalGrowth) {
+                const fcf = 5000; // Terminal year FCF (simplified)
+                const terminalValue = fcf * (1 + terminalGrowth) / (wacc - terminalGrowth);
+                const presentValue = terminalValue / Math.pow(1 + wacc, 5);
+                return presentValue / 1000; // Convert to millions
+            }
+            
+            // Create datasets for different growth rates
+            growthRates.forEach((growthRate, i) => {
+                const data = waccRates.map(wacc => simplifiedDCF(wacc, growthRate));
+                
+                datasets.push({
+                    label: `Growth ${(growthRate * 100).toFixed(1)}%`,
+                    data: data,
+                    borderColor: `hsl(${i * 60}, 70%, 50%)`,
+                    backgroundColor: `hsla(${i * 60}, 70%, 50%, 0.2)`,
+                    borderWidth: 2,
+                    fill: false
+                });
+            });
+            
+            // If chart exists, destroy it
+            if (window.sensitivityChart) {
+                window.sensitivityChart.destroy();
+            }
+            
+            // Create chart
+            window.sensitivityChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: waccRates.map(wacc => `${(wacc * 100).toFixed(1)}%`),
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Equity Value ($ millions)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'WACC'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'DCF Sensitivity Analysis: WACC vs. Terminal Growth'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Show/hide tabs
+        function showTab(tabId) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabId).classList.add('active');
+            
+            // Update tab navigation
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Find the clicked tab and activate it
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                if (tab.textContent.toLowerCase().includes(tabId.toLowerCase())) {
+                    tab.classList.add('active');
+                }
+            });
+        }
+
+        // Update projections when sliders change
+        function updateProjections() {
+            // Update slider values display
+            document.getElementById('revenue-growth-value').textContent = document.getElementById('revenue-growth').value + '%';
+            document.getElementById('gross-margin-value').textContent = document.getElementById('gross-margin').value + '%';
+            document.getElementById('sga-percent-value').textContent = document.getElementById('sga-percent').value + '%';
+            document.getElementById('rd-percent-value').textContent = document.getElementById('rd-percent').value + '%';
+            document.getElementById('capex-percent-value').textContent = document.getElementById('capex-percent').value + '%';
+            document.getElementById('tax-rate-value').textContent = document.getElementById('tax-rate').value + '%';
+            document.getElementById('wc-percent-value').textContent = document.getElementById('wc-percent').value + '%';
+            
+            // Calculate and display projections
+            projectFinancials();
+            displayProjections();
+            calculateValuation();
+            calculateInvestment();
+            updateCharts();
+        }
+
+        // Update valuation when sliders change
+        function updateValuation() {
+            // Update slider values display
+            document.getElementById('wacc-value').textContent = document.getElementById('wacc').value + '%';
+            document.getElementById('terminal-growth-value').textContent = document.getElementById('terminal-growth').value + '%';
+            document.getElementById('ebitda-multiple-value').textContent = document.getElementById('ebitda-multiple').value + 'x';
+            document.getElementById('revenue-multiple-value').textContent = document.getElementById('revenue-multiple').value + 'x';
+            document.getElementById('book-multiple-value').textContent = document.getElementById('book-multiple').value + 'x';
+            document.getElementById('pe-multiple-value').textContent = document.getElementById('pe-multiple').value + 'x';
+            
+            // Calculate and display valuation
+            calculateValuation();
+            updateValuationChart();
+            updateValuationMethodsChart();
+            updateSensitivityChart();
+        }
+
+        // Update investment when sliders change
+        function updateInvestment() {
+            // Update slider values display
+            document.getElementById('investment-amount-value').textContent = '$' + document.getElementById('investment-amount').value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            document.getElementById('equity-percent-value').textContent = document.getElementById('equity-percent').value + '%';
+            document.getElementById('debt-interest-value').textContent = document.getElementById('debt-interest').value + '%';
+            
+            const exitYear = document.getElementById('exit-year').value;
+            document.getElementById('exit-year-value').textContent = `${2024 + parseInt(exitYear)} (Year ${exitYear})`;
+            
+            document.getElementById('exit-multiple-value').textContent = document.getElementById('exit-multiple').value + 'x';
+            document.getElementById('ownership-stake-value').textContent = document.getElementById('ownership-stake').value + '%';
+            
+            // Calculate and display investment returns
+            calculateInvestment();
+            updateInvestmentChart();
+        }
+
+        // Initialize the application
+        function initApp() {
+            loadHistoricalData();
+            projectFinancials();
+            displayProjections();
+            calculateValuation();
+            calculateInvestment();
+            updateCharts();
+        }
+
+        // Run initialization when the page loads
+        window.onload = initApp;
+
+        // Auto-tabulate financial statements
+        function autoTabulate() {
+            // Income Statement
+            const revenue = historicalData.incomeStatement["Revenue"];
+            historicalData.incomeStatement["Cost of Goods Sold"] = revenue.map(r => -r * 0.35); // Assuming 35% COGS
+            historicalData.incomeStatement["Gross Profit"] = revenue.map((r, i) => r + historicalData.incomeStatement["Cost of Goods Sold"][i]);
+            historicalData.incomeStatement["SG&A Expenses"] = revenue.map(r => -r * 0.25); // Assuming 25% SG&A
+            historicalData.incomeStatement["R&D Expenses"] = revenue.map(r => -r * 0.1); // Assuming 10% R&D
+            historicalData.incomeStatement["Other Operating Expenses"] = revenue.map(r => -r * 0.03); // Assuming 3% other OpEx
+            historicalData.incomeStatement["EBITDA"] = historicalData.incomeStatement["Gross Profit"].map((gp, i) => gp + historicalData.incomeStatement["SG&A Expenses"][i] + historicalData.incomeStatement["R&D Expenses"][i] + historicalData.incomeStatement["Other Operating Expenses"][i]);
+            historicalData.incomeStatement["Depreciation & Amortization"] = historicalData.incomeStatement["EBITDA"].map(ebitda => -ebitda * 0.2); // Assuming 20% of EBITDA
+            historicalData.incomeStatement["EBIT"] = historicalData.incomeStatement["EBITDA"].map((ebitda, i) => ebitda + historicalData.incomeStatement["Depreciation & Amortization"][i]);
+            historicalData.incomeStatement["Interest Expense"] = revenue.map(r => -r * 0.05); // Assuming 5% interest expense
+            historicalData.incomeStatement["Income Before Taxes"] = historicalData.incomeStatement["EBIT"].map((ebit, i) => ebit + historicalData.incomeStatement["Interest Expense"][i]);
+            historicalData.incomeStatement["Income Tax Expense"] = historicalData.incomeStatement["Income Before Taxes"].map(ebt => -ebt * 0.25); // Assuming 25% tax rate
+            historicalData.incomeStatement["Net Income"] = historicalData.incomeStatement["Income Before Taxes"].map((ebt, i) => ebt + historicalData.incomeStatement["Income Tax Expense"][i]);
+
+            // Balance Sheet
+            historicalData.balanceSheet["Total Current Assets"] = historicalData.balanceSheet["Cash and Cash Equivalents"].map((cash, i) => cash + historicalData.balanceSheet["Accounts Receivable"][i] + historicalData.balanceSheet["Inventory"][i] + historicalData.balanceSheet["Other Current Assets"][i]);
+            historicalData.balanceSheet["Net PP&E"] = historicalData.balanceSheet["Property, Plant & Equipment"].map((ppe, i) => ppe + historicalData.balanceSheet["Accumulated Depreciation"][i]);
+            historicalData.balanceSheet["Total Assets"] = historicalData.balanceSheet["Total Current Assets"].map((tca, i) => tca + historicalData.balanceSheet["Net PP&E"][i] + historicalData.balanceSheet["Goodwill and Intangibles"][i] + historicalData.balanceSheet["Other Long-term Assets"][i]);
+            historicalData.balanceSheet["Total Current Liabilities"] = historicalData.balanceSheet["Accounts Payable"].map((ap, i) => ap + historicalData.balanceSheet["Accrued Expenses"][i] + historicalData.balanceSheet["Short-term Debt"][i] + historicalData.balanceSheet["Other Current Liabilities"][i]);
+            historicalData.balanceSheet["Total Liabilities"] = historicalData.balanceSheet["Total Current Liabilities"].map((tcl, i) =>tcl + historicalData.balanceSheet["Long-term Debt"][i] + historicalData.balanceSheet["Other Long-term Liabilities"][i]);
+            historicalData.balanceSheet["Total Equity"] = historicalData.balanceSheet["Common Stock"].map((cs, i) => cs + historicalData.balanceSheet["Retained Earnings"][i]);
+            historicalData.balanceSheet["Total Liabilities & Equity"] = historicalData.balanceSheet["Total Liabilities"].map((tl, i) => tl + historicalData.balanceSheet["Total Equity"][i]);
+
+            // Cash Flow Statement
+            historicalData.cashFlow["Cash from Operating Activities"] = historicalData.cashFlow["Net Income"].map((ni, i) => ni + historicalData.cashFlow["Depreciation & Amortization"][i] + historicalData.cashFlow["Changes in Working Capital"][i] + historicalData.cashFlow["Other Operating Activities"][i]);
+            historicalData.cashFlow["Cash from Investing Activities"] = historicalData.cashFlow["Capital Expenditures"].map((capex, i) => capex + historicalData.cashFlow["Acquisitions"][i] + historicalData.cashFlow["Other Investing Activities"][i]);
+            historicalData.cashFlow["Cash from Financing Activities"] = historicalData.cashFlow["Debt Issuance (Repayment)"].map((debt, i) => debt + historicalData.cashFlow["Equity Issuance (Buyback)"][i] + historicalData.cashFlow["Dividends Paid"][i] + historicalData.cashFlow["Other Financing Activities"][i]);
+            historicalData.cashFlow["Net Change in Cash"] = historicalData.cashFlow["Cash from Operating Activities"].map((cfo, i) => cfo + historicalData.cashFlow["Cash from Investing Activities"][i] + historicalData.cashFlow["Cash from Financing Activities"][i]);
+            historicalData.cashFlow["Ending Cash Balance"] = historicalData.cashFlow["Beginning Cash Balance"].map((bb, i) => bb + historicalData.cashFlow["Net Change in Cash"][i]);
+
+            updateHistoricalData();
+        }
+
+        // Validate financial statements
+        function validateFinancialStatements() {
+            const errors = [];
+            
+            // Check if net income matches retained earnings change
+            const netIncome = historicalData.incomeStatement["Net Income"];
+            const retainedEarnings = historicalData.balanceSheet["Retained Earnings"];
+            for (let i = 0; i < 3; i++) {
+                if (i === 0) {
+                    if (netIncome[i] !== retainedEarnings[i+1] - retainedEarnings[i]) {
+                        errors.push(`Net Income in ${2022 + i} doesn't match Retained Earnings change`);
+                    }
+                } else {
+                    if (netIncome[i] !== retainedEarnings[i+1] - retainedEarnings[i] + historicalData.cashFlow["Dividends Paid"][i-1]) {
+                        errors.push(`Net Income in ${2022 + i} doesn't match Retained Earnings change and Dividends Paid`);
+                    }
+                }
+            }
+            
+            // Check if cash flow statement matches balance sheet changes
+            const cashBalance = historicalData.cashFlow["Ending Cash Balance"];
+            const cashAndCashEquivalents = historicalData.balanceSheet["Cash and Cash Equivalents"];
+            for (let i = 0; i < 3; i++) {
+                if (cashBalance[i] !== cashAndCashEquivalents[i]) {
+                    errors.push(`Cash Balance in Cash Flow Statement doesn't match Cash and Cash Equivalents in Balance Sheet for ${2022 + i}`);
+                }
+            }
+            
+            // Display errors if any
+            if (errors.length > 0) {
+                alert("Financial Statement Errors:\n" + errors.join("\n"));
+            }
+        }
+
+        // Call validateFinancialStatements when historical data is updated
+        function updateHistoricalData() {
+            autoTabulate();
+            projectFinancials();
+            displayProjections();
+            calculateValuation();
+            calculateInvestment();
+            updateCharts();
+            validateFinancialStatements();
+        }
+    </script>
+</body>
+</html>
