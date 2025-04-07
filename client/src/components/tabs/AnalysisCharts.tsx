@@ -630,7 +630,7 @@ export default function AnalysisCharts() {
                 callbacks: {
                   label: function(context) {
                     const label = context.label || '';
-                    const value = context.raw;
+                    const value = context.raw as number;
                     const total = context.dataset.data.reduce((sum: number, val: number) => sum + val, 0);
                     const percentage = Math.round((value / total) * 100);
                     return `${label}: $${value.toLocaleString()} (${percentage}%)`;
