@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ProjectionYear, FinancialData, ProjectionParams } from '@/lib/types';
 import FinancialTable from '@/components/ui/FinancialTable';
 import { useUser } from '@/contexts/UserContext';
@@ -49,7 +49,7 @@ export default function FinancialProjections() {
   });
   
   // Base values for projections - using data from historical financials when available
-  const baseValues = historicalFinancials ? {
+  const baseValues = useMemo(() => historicalFinancials ? {
     revenue: historicalFinancials.incomeStatement['2024']?.revenue || 7800,
     cogs: historicalFinancials.incomeStatement['2024']?.cogs || 2730,
     cash: historicalFinancials.balanceSheet['2024']?.cash || 1700,
@@ -71,7 +71,7 @@ export default function FinancialProjections() {
     shortTermDebt: 1100,
     longTermDebt: 1700,
     equity: 3700
-  };
+  }, [historicalFinancials]);
   
   // Display notification when historical data is loaded (using ref to prevent infinite renders)
   const notificationShown = React.useRef(false);
@@ -230,7 +230,7 @@ export default function FinancialProjections() {
     });
     
     setProjectedData(newProjectedData);
-  }, [params, projectionYears, historicalFinancials]);
+  }, [params, projectionYears, baseValues]);
   
   // Income Statement rows definition
   const incomeStatementRows = [
