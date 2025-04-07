@@ -29,33 +29,7 @@ export default function FinancialProjections() {
   };
   
   const [params, setParams] = useState<ProjectionParams>(initialProjectionParams);
-  const [projectedData, setProjectedData] = useState<{
-    incomeStatement: Record<ProjectionYear, FinancialData>;
-    balanceSheet: Record<ProjectionYear, FinancialData>;
-    cashFlow: Record<ProjectionYear, FinancialData>;
-  }>({
-    incomeStatement: {
-      '2025': {},
-      '2026': {},
-      '2027': {},
-      '2028': {},
-      '2029': {}
-    },
-    balanceSheet: {
-      '2025': {},
-      '2026': {},
-      '2027': {},
-      '2028': {},
-      '2029': {}
-    },
-    cashFlow: {
-      '2025': {},
-      '2026': {},
-      '2027': {},
-      '2028': {},
-      '2029': {}
-    }
-  });
+  // We don't need separate state for projectedData; use the useMemo value directly
   
   // Base values for projections - using data from historical financials when available
   const baseValues = useMemo(() => historicalFinancials ? {
@@ -241,10 +215,8 @@ export default function FinancialProjections() {
     return newProjectedData;
   }, [params, projectionYears, baseValues]);
   
-  // Set the projected data when the generated projections change
-  useEffect(() => {
-    setProjectedData(generateProjections);
-  }, [generateProjections]);
+  // Set the projected data when parameters change, not in a separate effect
+  // (using projectedData from useMemo directly to avoid infinite update issues)
   
   // Income Statement rows definition
   const incomeStatementRows = [
@@ -435,23 +407,23 @@ export default function FinancialProjections() {
       
       <FinancialTable
         title="Projected Income Statement ($000s)"
-        years={projectionYears}
-        rows={incomeStatementRows}
-        data={projectedData.incomeStatement}
+        years={projectionYears as any}
+        rows={incomeStatementRows as any}
+        data={generateProjections.incomeStatement as any}
       />
       
       <FinancialTable
         title="Projected Balance Sheet ($000s)"
-        years={projectionYears}
-        rows={balanceSheetRows}
-        data={projectedData.balanceSheet}
+        years={projectionYears as any}
+        rows={balanceSheetRows as any}
+        data={generateProjections.balanceSheet as any}
       />
       
       <FinancialTable
         title="Projected Cash Flow Statement ($000s)"
-        years={projectionYears}
-        rows={cashFlowRows}
-        data={projectedData.cashFlow}
+        years={projectionYears as any}
+        rows={cashFlowRows as any}
+        data={generateProjections.cashFlow as any}
       />
     </div>
   );
