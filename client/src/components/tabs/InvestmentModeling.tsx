@@ -34,14 +34,14 @@ export default function InvestmentModeling() {
     debtInterestRate: debtParameters.debtInterestRate,
     debtPaymentType: debtParameters.debtPaymentType,
   });
-  
+
   const [investmentResults, setInvestmentResults] = useState({
     exitValue: 0,
     investorProceeds: 0,
     moneyMultiple: 0,
     irr: 0,
   });
-  
+
   // Base EBITDA values for the first 5 years
   const baseProjectedEBITDA: Record<ProjectionYear, number> = {
     '2025': 2574,
@@ -53,19 +53,19 @@ export default function InvestmentModeling() {
     '2031': 0, // Will be calculated based on growth rates
     '2032': 0, // Will be calculated based on growth rates
   };
-  
+
   // Calculate extended EBITDA values with terminal growth rate
   const projectedEBITDA = useMemo(() => {
     const result = { ...baseProjectedEBITDA };
-    
+
     // Calculate 2030, 2031, 2032 using terminal growth rate
     result['2030'] = result['2029'] * (1 + investmentParams.terminalGrowthRate / 100);
     result['2031'] = result['2030'] * (1 + investmentParams.terminalGrowthRate / 100);
     result['2032'] = result['2031'] * (1 + investmentParams.terminalGrowthRate / 100);
-    
+
     return result;
   }, [baseProjectedEBITDA, investmentParams.terminalGrowthRate]);
-  
+
   // Helper function to convert number to ProjectionYear type
   const getProjectionYearValue = useMemo(() => {
     return (year: number): number => {
@@ -73,14 +73,14 @@ export default function InvestmentModeling() {
       return projectedEBITDA[yearStr] || 0;
     };
   }, [projectedEBITDA]);
-  
+
   // Update investment parameters and sync with debt context when relevant
   const handleParamChange = (param: string, value: number) => {
     setInvestmentParams(prev => ({
       ...prev,
       [param]: value
     }));
-    
+
     // If updating debt-related parameters, also update the debt context
     if (param === 'debtAmount') {
       setDebtParameters({
@@ -99,7 +99,7 @@ export default function InvestmentModeling() {
       });
     }
   };
-  
+
   // Handle payment type toggle and update the DebtContext
   const handleTogglePaymentType = (type: 'linear' | 'lumpSum') => {
     // Update debt context to share with other components
@@ -108,27 +108,27 @@ export default function InvestmentModeling() {
       debtPaymentType: type
     });
   };
-  
+
   // Calculate cash flow with debt payments
   const calculateDebtCashFlow = () => {
     const holdingPeriod = investmentParams.exitYear - investmentParams.investmentYear;
     const debtAmount = investmentParams.debtAmount;
     const interestRate = investmentParams.debtInterestRate / 100;
     const paymentType = investmentParams.debtPaymentType;
-    
+
     const years: number[] = [];
     for (let i = investmentParams.investmentYear; i <= investmentParams.exitYear; i++) {
       years.push(i);
     }
-    
+
     let debtBalance = debtAmount;
     const cashFlowData = years.map((year, index) => {
       const yearStr = year.toString() as ProjectionYear;
       const ebitda = projectedEBITDA[yearStr] || 0;
-      
+
       let principal = 0;
       let interest = 0;
-      
+
       if (paymentType === 'linear') {
         // Linear payment: equal principal payments each year
         principal = index === 0 ? 0 : debtAmount / (holdingPeriod);
@@ -138,11 +138,11 @@ export default function InvestmentModeling() {
         interest = debtBalance * interestRate;
         principal = index === holdingPeriod - 1 ? debtAmount : 0;
       }
-      
+
       debtBalance -= principal;
-      
+
       const freeCashFlow = ebitda - interest - principal;
-      
+
       return {
         year,
         ebitda,
@@ -152,32 +152,32 @@ export default function InvestmentModeling() {
         freeCashFlow,
       };
     });
-    
+
     return cashFlowData;
   };
-  
+
   // Calculate investment returns
   useEffect(() => {
     const calculateInvestmentReturns = () => {
       const exitYear = investmentParams.exitYear;
       const investmentYear = investmentParams.investmentYear;
       const holdingPeriod = exitYear - investmentYear;
-      
+
       // Get exit year EBITDA
       let exitEBITDA = getProjectionYearValue(exitYear);
-      
+
       // Calculate company value at exit
       const exitCompanyValue = exitEBITDA * investmentParams.exitMultiple;
-      
+
       // Calculate investor's share of exit proceeds
       const investorProceeds = exitCompanyValue * (investmentParams.ownershipStake / 100);
-      
+
       // Calculate money multiple
       const moneyMultiple = investorProceeds / investmentParams.initialInvestment;
-      
+
       // Calculate IRR
       const irr = ((Math.pow(moneyMultiple, 1 / holdingPeriod) - 1) * 100);
-      
+
       return {
         exitValue: exitCompanyValue,
         investorProceeds,
@@ -185,23 +185,23 @@ export default function InvestmentModeling() {
         irr,
       };
     };
-    
+
     setInvestmentResults(calculateInvestmentReturns());
-  }, [investmentParams, projectedEBITDA]);
+  }, [investmentParams, projectedEBITDA, getProjectionYearValue]);
 
   // Format currency in thousands
   const formatCurrency = (value: number) => {
     return '$' + value.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
-  
+
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
       <h2 className="text-xl font-bold mb-4">Investment Modeling</h2>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div>
           <h3 className="text-lg font-semibold mb-3">Investment Parameters</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">Initial Investment ($000s)</label>
@@ -212,7 +212,7 @@ export default function InvestmentModeling() {
                 className="block w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">Ownership Stake (%)</label>
               <input
@@ -225,7 +225,7 @@ export default function InvestmentModeling() {
               />
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">Investment Year</label>
@@ -240,7 +240,7 @@ export default function InvestmentModeling() {
                 <option value={2028}>2028</option>
               </select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">Exit Year</label>
               <select
@@ -258,7 +258,7 @@ export default function InvestmentModeling() {
               </select>
             </div>
           </div>
-          
+
           <div className="mb-4">
             <div className="flex justify-between mb-1">
               <span>Exit EBITDA Multiple</span>
@@ -274,7 +274,7 @@ export default function InvestmentModeling() {
               className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
             />
           </div>
-          
+
           <div className="mb-4">
             <div className="flex justify-between mb-1">
               <span>Company Annual Growth Rate</span>
@@ -290,7 +290,7 @@ export default function InvestmentModeling() {
               className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
             />
           </div>
-          
+
           <div className="mb-4">
             <div className="flex justify-between mb-1">
               <span>Terminal Growth Rate</span>
@@ -310,34 +310,34 @@ export default function InvestmentModeling() {
             </p>
           </div>
         </div>
-        
+
         <div>
           <h3 className="text-lg font-semibold mb-3">Investment Returns</h3>
-          
+
           <div className="bg-white border border-neutral-200 rounded-lg p-4 shadow-sm mb-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <h4 className="text-sm font-medium text-neutral-500">Company Exit Value</h4>
                 <div className="text-2xl font-bold text-primary">{formatCurrency(investmentResults.exitValue)}</div>
               </div>
-              
+
               <div>
                 <h4 className="text-sm font-medium text-neutral-500">Investor Proceeds</h4>
                 <div className="text-2xl font-bold text-primary">{formatCurrency(investmentResults.investorProceeds)}</div>
               </div>
-              
+
               <div>
                 <h4 className="text-sm font-medium text-neutral-500">Money Multiple</h4>
                 <div className="text-2xl font-bold text-primary">{investmentResults.moneyMultiple.toFixed(2)}x</div>
               </div>
-              
+
               <div>
                 <h4 className="text-sm font-medium text-neutral-500">IRR</h4>
                 <div className="text-2xl font-bold text-primary">{investmentResults.irr.toFixed(1)}%</div>
               </div>
             </div>
           </div>
-          
+
           <div className="bg-neutral-50 rounded-lg p-4 border border-neutral-200">
             <h3 className="text-base font-semibold mb-2">Investment Summary</h3>
             <ul className="text-sm space-y-2 text-neutral-600">
@@ -349,11 +349,11 @@ export default function InvestmentModeling() {
           </div>
         </div>
       </div>
-      
+
       {/* Debt Financing Section */}
       <div className="border-t border-neutral-200 pt-6 mb-6">
         <h3 className="text-lg font-semibold mb-4">Debt Financing Options</h3>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
             <div className="mb-4">
@@ -365,7 +365,7 @@ export default function InvestmentModeling() {
                 className="block w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
               />
             </div>
-            
+
             <div className="mb-4">
               <div className="flex justify-between mb-1">
                 <span>Interest Rate</span>
@@ -381,7 +381,7 @@ export default function InvestmentModeling() {
                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
               />
             </div>
-            
+
             <div className="mb-4">
               <label className="block text-sm font-medium text-neutral-700 mb-2">Payment Type</label>
               <div className="flex space-x-4">
@@ -415,7 +415,7 @@ export default function InvestmentModeling() {
               </p>
             </div>
           </div>
-          
+
           <div>
             <h4 className="text-base font-medium mb-3">Cash Flow Impact</h4>
             <div className="bg-white p-1 border border-neutral-200 rounded-lg h-64">
@@ -453,7 +453,7 @@ export default function InvestmentModeling() {
           </div>
         </div>
       </div>
-      
+
       {/* Extended Projections Section */}
       <div className="border-t border-neutral-200 pt-6 mb-6">
         <h3 className="text-lg font-semibold mb-3">Extended Projections with Terminal Growth Rate</h3>
@@ -494,7 +494,7 @@ export default function InvestmentModeling() {
           </table>
         </div>
       </div>
-      
+
       {/* Sensitivity Analysis Section */}
       <div className="border-t border-neutral-200 pt-6">
         <h3 className="text-lg font-semibold mb-3">Sensitivity Analysis</h3>
