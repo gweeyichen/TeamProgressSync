@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useUser } from '@/contexts/UserContext';
-import { FinancialYear } from '@/lib/types';
+import { FinancialYear, ProjectionParams } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import {
   Table,
@@ -11,26 +11,56 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { 
+  Chart as ChartJS, 
+  CategoryScale, 
+  LinearScale, 
+  PointElement, 
+  LineElement, 
+  BarElement,
+  Title, 
+  Tooltip, 
+  Legend,
+  Filler
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 type Month = 'Jan' | 'Feb' | 'Mar' | 'Apr' | 'May' | 'Jun' | 'Jul' | 'Aug' | 'Sep' | 'Oct' | 'Nov' | 'Dec';
 const MONTHS: Month[] = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-// Get current date (April 2025)
-const CURRENT_DATE = new Date(2025, 3, 8); // April 8, 2025
-const CURRENT_MONTH_INDEX = CURRENT_DATE.getMonth();
-const CURRENT_MONTH = MONTHS[CURRENT_MONTH_INDEX];
-const CURRENT_YEAR = CURRENT_DATE.getFullYear();
+// Default projection parameters if we can't get them from FinancialProjections
+const DEFAULT_PROJECTION_PARAMS: ProjectionParams = {
+  revenueGrowth: 10,
+  grossMargin: 65,
+  sgaPercent: 25,
+  rdPercent: 10,
+  capexPercent: 8,
+  taxRate: 25,
+  wcPercent: 15
+};
 
 // Generate the next 12 months from April 2025
 const FORECAST_MONTHS = [...Array(12)].map((_, i) => {
-  const futureDate = new Date(CURRENT_DATE);
-  futureDate.setMonth(CURRENT_MONTH_INDEX + i);
+  const futureDate = new Date(2025, 3 + i, 1); // Start from April 2025
   const monthIndex = futureDate.getMonth();
   const year = futureDate.getFullYear();
   return {
     month: MONTHS[monthIndex],
     year: year,
-    label: `${MONTHS[monthIndex]}${year !== CURRENT_YEAR ? ' ' + year : ''}`
+    label: `${MONTHS[monthIndex]}${year !== 2025 ? ' ' + year : ''}`
   };
 });
 
@@ -38,6 +68,7 @@ const FORECAST_MONTHS = [...Array(12)].map((_, i) => {
 interface MonthlyCashFlowData {
   operatingActivities: {
     revenue: number[];
+    cogs: number[];
     depreciation: number[];
     receivablesChange: number[];
     inventoryChange: number[];
@@ -58,10 +89,16 @@ interface MonthlyCashFlowData {
     beginningBalance: number[];
     endingBalance: number[];
   };
+  metrics: {
+    freeCashFlow: number[];
+    debtCoverageRatio: number[];
+    cashToDebtRatio: number[];
+  };
 }
 
 interface AnnualCashFlowSummary {
   revenue: number;
+  cogs: number;
   depreciation: number;
   receivablesChange: number;
   inventoryChange: number;
@@ -75,6 +112,11 @@ interface AnnualCashFlowSummary {
   netChange: number;
   beginningBalance: number;
   endingBalance: number;
+  metrics: {
+    freeCashFlow: number;
+    debtCoverageRatio: number;
+    cashToDebtRatio: number;
+  };
 }
 
 export default function MonthlyCashFlow() {
@@ -85,6 +127,7 @@ export default function MonthlyCashFlow() {
     '2024': createEmptyAnnualSummary(),
   });
   const [futureCashFlow, setFutureCashFlow] = useState<MonthlyCashFlowData>(createEmptyMonthlyCashFlowData());
+  const [projectionParams, setProjectionParams] = useState<ProjectionParams>(DEFAULT_PROJECTION_PARAMS);
 
   // Create empty data structures
   function createEmptyMonthlyCashFlowData(): MonthlyCashFlowData {
@@ -92,6 +135,7 @@ export default function MonthlyCashFlow() {
     return {
       operatingActivities: {
         revenue: [...emptyMonthArray],
+        cogs: [...emptyMonthArray],
         depreciation: [...emptyMonthArray],
         receivablesChange: [...emptyMonthArray],
         inventoryChange: [...emptyMonthArray],
@@ -111,6 +155,11 @@ export default function MonthlyCashFlow() {
         netChange: [...emptyMonthArray],
         beginningBalance: [...emptyMonthArray],
         endingBalance: [...emptyMonthArray],
+      },
+      metrics: {
+        freeCashFlow: [...emptyMonthArray],
+        debtCoverageRatio: [...emptyMonthArray],
+        cashToDebtRatio: [...emptyMonthArray]
       }
     };
   }
@@ -118,6 +167,7 @@ export default function MonthlyCashFlow() {
   function createEmptyAnnualSummary(): AnnualCashFlowSummary {
     return {
       revenue: 0,
+      cogs: 0,
       depreciation: 0,
       receivablesChange: 0,
       inventoryChange: 0,
@@ -130,9 +180,20 @@ export default function MonthlyCashFlow() {
       netFinancingCashFlow: 0,
       netChange: 0,
       beginningBalance: 0,
-      endingBalance: 0
+      endingBalance: 0,
+      metrics: {
+        freeCashFlow: 0,
+        debtCoverageRatio: 0,
+        cashToDebtRatio: 0
+      }
     };
   }
+
+  // Set projection parameters - could be used from a UI control or from FinancialProjections
+  useEffect(() => {
+    // If you had access to the FinancialProjections params, you would use them here
+    setProjectionParams(DEFAULT_PROJECTION_PARAMS);
+  }, []);
 
   // Consolidated data for calculation
   const financialData = useMemo(() => {
@@ -220,7 +281,7 @@ export default function MonthlyCashFlow() {
       
       // Operating cash flow
       const annualOperatingCashFlow = data.revenue - data.cogs - data.revenue * 0.2 + annualDepreciation - 
-                                      receivablesChange - inventoryChange + payablesChange;
+                                     receivablesChange - inventoryChange + payablesChange;
       
       // Net investing cash flow
       const annualInvestingCashFlow = -annualCapEx;
@@ -235,9 +296,15 @@ export default function MonthlyCashFlow() {
       const beginningBalance = data.cash - annualNetChange;
       const endingBalance = data.cash;
       
+      // Advanced metrics
+      const freeCashFlow = annualOperatingCashFlow - annualCapEx;
+      const debtCoverageRatio = totalDebt > 0 ? annualOperatingCashFlow / annualDebtRepayment : 0;
+      const cashToDebtRatio = totalDebt > 0 ? endingBalance / totalDebt : 0;
+      
       // Set the annual summary
       newHistoricalSummary[year] = {
         revenue: data.revenue,
+        cogs: data.cogs,
         depreciation: annualDepreciation,
         receivablesChange: receivablesChange,
         inventoryChange: inventoryChange,
@@ -250,7 +317,12 @@ export default function MonthlyCashFlow() {
         netFinancingCashFlow: annualFinancingCashFlow,
         netChange: annualNetChange,
         beginningBalance: beginningBalance,
-        endingBalance: endingBalance
+        endingBalance: endingBalance,
+        metrics: {
+          freeCashFlow,
+          debtCoverageRatio,
+          cashToDebtRatio
+        }
       };
     });
     
@@ -269,31 +341,37 @@ export default function MonthlyCashFlow() {
     // Create forecast data structure
     const newFutureCashFlow = createEmptyMonthlyCashFlowData();
     
-    // Growth rates and assumptions
-    const annualRevenueGrowthRate = 0.08; // 8% annual growth
-    const monthlyRevenueGrowthRate = Math.pow(1 + annualRevenueGrowthRate, 1/12) - 1;
-    const cogsRatio = latestData.cogs / latestData.revenue;
-    const depreciationRatio = latestSummary.depreciation / latestData.revenue;
-    const capexRatio = latestSummary.capitalExpenditures / latestData.revenue;
-    const dividendRatio = latestSummary.dividendsPaid / latestData.revenue;
-    const debtRepaymentMonthly = latestSummary.debtRepayment / 12;
+    // Monthly growth rates derived from annual rates in projection parameters
+    const monthlyRevenueGrowthRate = Math.pow(1 + projectionParams.revenueGrowth / 100, 1/12) - 1;
     
-    // Working capital ratios in days
-    const receivablesDays = 45; // Example: 45 days of sales in receivables
-    const inventoryDays = 60; // Example: 60 days of COGS in inventory
-    const payablesDays = 30; // Example: 30 days of COGS in payables
+    // Important ratios from historical data
+    const cogsRatio = 1 - (projectionParams.grossMargin / 100); // COGS as percentage of revenue
+    const opExRatio = (projectionParams.sgaPercent + projectionParams.rdPercent) / 100; // Operating expenses ratio
+    
+    // Starting with last month of 2024 (divide annual figures by 12)
+    const monthlyRevenue2024 = latestData.revenue / 12;
+    const monthlyCogs2024 = latestData.cogs / 12;
+    const monthlyDepreciation2024 = latestSummary.depreciation / 12;
+    const monthlyCapEx2024 = latestSummary.capitalExpenditures / 12;
+    const monthlyDebtRepayment2024 = latestSummary.debtRepayment / 12;
+    const monthlyDividends2024 = latestSummary.dividendsPaid / 12;
+    
+    // Working capital assumptions (as days of sales/COGS)
+    const receivablesDays = 45;
+    const inventoryDays = 60;
+    const payablesDays = 30;
     
     // Seasonal factors (optional)
     const seasonality = [1.0, 0.95, 1.05, 1.1, 1.08, 1.12, 1.15, 1.1, 1.05, 1.08, 1.15, 1.2];
     
-    // Monthly revenue projection
-    // First month is April 2025, starting with 2024 December monthly revenue * growth
-    const december2024MonthlyRevenue = latestData.revenue / 12; // Simplified
-    let prevMonthRevenue = december2024MonthlyRevenue * (1 + monthlyRevenueGrowthRate) * 3; // Grow for 3 months
+    // Initialize prev month values
+    let prevMonthRevenue = monthlyRevenue2024 * (1 + monthlyRevenueGrowthRate) * 3; // Grow for Jan-Mar 2025
+    let prevMonthCogs = monthlyCogs2024 * (1 + monthlyRevenueGrowthRate) * 3;
+    let totalDebt = latestData.shortTermDebt + latestData.longTermDebt;
     
-    // Calculate each month
+    // Calculate each month (April 2025 through March 2026)
     for (let i = 0; i < 12; i++) {
-      // Apply growth and seasonality
+      // Apply growth and seasonality for current month
       const currentSeasonality = seasonality[i % 12];
       const prevSeasonality = seasonality[(i - 1) % 12] || 1;
       
@@ -301,15 +379,21 @@ export default function MonthlyCashFlow() {
       if (i === 0) {
         newFutureCashFlow.operatingActivities.revenue[i] = prevMonthRevenue * currentSeasonality;
       } else {
-        newFutureCashFlow.operatingActivities.revenue[i] = newFutureCashFlow.operatingActivities.revenue[i-1] * 
-                                                           (1 + monthlyRevenueGrowthRate) * 
-                                                           (currentSeasonality / prevSeasonality);
+        newFutureCashFlow.operatingActivities.revenue[i] = 
+          newFutureCashFlow.operatingActivities.revenue[i-1] * 
+          (1 + monthlyRevenueGrowthRate) * 
+          (currentSeasonality / prevSeasonality);
       }
       
-      // Depreciation (steady, based on revenue)
-      newFutureCashFlow.operatingActivities.depreciation[i] = newFutureCashFlow.operatingActivities.revenue[i] * depreciationRatio;
+      // COGS
+      newFutureCashFlow.operatingActivities.cogs[i] = 
+        newFutureCashFlow.operatingActivities.revenue[i] * cogsRatio;
       
-      // Working capital changes
+      // Depreciation (steady monthly amount based on fixed assets)
+      newFutureCashFlow.operatingActivities.depreciation[i] = monthlyDepreciation2024 * 
+        (1 + (i * monthlyRevenueGrowthRate / 2)); // Grows slightly as assets grow
+      
+      // Working capital changes (monthly changes based on revenue changes)
       // For the first month, compare to assumed Dec 2024 values
       if (i === 0) {
         // Receivables change - increase in receivables is a cash outflow
@@ -319,13 +403,13 @@ export default function MonthlyCashFlow() {
         
         // Inventory change - increase in inventory is a cash outflow
         newFutureCashFlow.operatingActivities.inventoryChange[i] = 
-          (newFutureCashFlow.operatingActivities.revenue[i] * cogsRatio / 30 * inventoryDays) - 
-          (prevMonthRevenue * cogsRatio / 30 * inventoryDays);
+          (newFutureCashFlow.operatingActivities.cogs[i] / 30 * inventoryDays) - 
+          (prevMonthCogs / 30 * inventoryDays);
         
         // Payables change - increase in payables is a cash inflow
         newFutureCashFlow.operatingActivities.payablesChange[i] = 
-          (newFutureCashFlow.operatingActivities.revenue[i] * cogsRatio / 30 * payablesDays) - 
-          (prevMonthRevenue * cogsRatio / 30 * payablesDays);
+          (newFutureCashFlow.operatingActivities.cogs[i] / 30 * payablesDays) - 
+          (prevMonthCogs / 30 * payablesDays);
       } else {
         // For subsequent months, compare to previous month
         newFutureCashFlow.operatingActivities.receivablesChange[i] = 
@@ -333,26 +417,30 @@ export default function MonthlyCashFlow() {
           (newFutureCashFlow.operatingActivities.revenue[i-1] / 30 * receivablesDays);
         
         newFutureCashFlow.operatingActivities.inventoryChange[i] = 
-          (newFutureCashFlow.operatingActivities.revenue[i] * cogsRatio / 30 * inventoryDays) - 
-          (newFutureCashFlow.operatingActivities.revenue[i-1] * cogsRatio / 30 * inventoryDays);
+          (newFutureCashFlow.operatingActivities.cogs[i] / 30 * inventoryDays) - 
+          (newFutureCashFlow.operatingActivities.cogs[i-1] / 30 * inventoryDays);
         
         newFutureCashFlow.operatingActivities.payablesChange[i] = 
-          (newFutureCashFlow.operatingActivities.revenue[i] * cogsRatio / 30 * payablesDays) - 
-          (newFutureCashFlow.operatingActivities.revenue[i-1] * cogsRatio / 30 * payablesDays);
+          (newFutureCashFlow.operatingActivities.cogs[i] / 30 * payablesDays) - 
+          (newFutureCashFlow.operatingActivities.cogs[i-1] / 30 * payablesDays);
       }
       
       // Net operating cash flow
       newFutureCashFlow.operatingActivities.netOperatingCashFlow[i] = 
-        newFutureCashFlow.operatingActivities.revenue[i] * (1 - cogsRatio - 0.2) + // Revenue - COGS - SG&A
-        newFutureCashFlow.operatingActivities.depreciation[i] -                     // Add back non-cash depreciation
-        newFutureCashFlow.operatingActivities.receivablesChange[i] -                // Subtract increase in receivables
-        newFutureCashFlow.operatingActivities.inventoryChange[i] +                  // Subtract increase in inventory
-        newFutureCashFlow.operatingActivities.payablesChange[i];                    // Add increase in payables
+        newFutureCashFlow.operatingActivities.revenue[i] - 
+        newFutureCashFlow.operatingActivities.cogs[i] - 
+        (newFutureCashFlow.operatingActivities.revenue[i] * opExRatio) + // SG&A and R&D
+        newFutureCashFlow.operatingActivities.depreciation[i] -           // Add back non-cash depreciation
+        newFutureCashFlow.operatingActivities.receivablesChange[i] -      // Subtract increase in receivables
+        newFutureCashFlow.operatingActivities.inventoryChange[i] +        // Subtract increase in inventory
+        newFutureCashFlow.operatingActivities.payablesChange[i];          // Add increase in payables
       
-      // Capital expenditures (as % of revenue with seasonal pattern)
+      // Capital expenditures (monthly with seasonality)
       const capExSeasonality = [0.5, 0.2, 0.6, 0.3, 0.2, 1.5, 0.4, 0.3, 2.0, 0.2, 0.3, 1.5]; // Lumpy capex
       newFutureCashFlow.investingActivities.capitalExpenditures[i] = 
-        newFutureCashFlow.operatingActivities.revenue[i] * capexRatio * capExSeasonality[i % 12];
+        (newFutureCashFlow.operatingActivities.revenue[i] * (projectionParams.capexPercent / 100)) * 
+        capExSeasonality[i % 12] / 
+        (capExSeasonality.reduce((a, b) => a + b, 0) / 12); // Normalize seasonality
       
       // Net investing cash flow
       newFutureCashFlow.investingActivities.netInvestingCashFlow[i] = 
@@ -360,10 +448,14 @@ export default function MonthlyCashFlow() {
       
       // Dividends (quarterly pattern)
       newFutureCashFlow.financingActivities.dividendsPaid[i] = 
-        (i % 3 === 0) ? newFutureCashFlow.operatingActivities.revenue[i] * dividendRatio * 3 : 0;
+        ((i + 1) % 3 === 0) ? (newFutureCashFlow.operatingActivities.revenue[i] * 0.02) * 3 : 0;
       
       // Debt repayment (monthly)
-      newFutureCashFlow.financingActivities.debtRepayment[i] = debtRepaymentMonthly;
+      newFutureCashFlow.financingActivities.debtRepayment[i] = monthlyDebtRepayment2024 * 
+        (1 + (i * monthlyRevenueGrowthRate / 4)); // Gradually increases
+      
+      // Update total debt (decreased by repayments)
+      totalDebt -= newFutureCashFlow.financingActivities.debtRepayment[i];
       
       // Net financing cash flow
       newFutureCashFlow.financingActivities.netFinancingCashFlow[i] = 
@@ -378,24 +470,151 @@ export default function MonthlyCashFlow() {
       
       // Beginning and ending balances
       if (i === 0) {
-        // First month (April 2025) starting balance is Dec 2024 ending balance + growth
-        newFutureCashFlow.cashBalance.beginningBalance[i] = latestSummary.endingBalance * 1.05;
+        // First month starting balance is Dec 2024 ending balance
+        newFutureCashFlow.cashBalance.beginningBalance[i] = latestSummary.endingBalance;
       } else {
         newFutureCashFlow.cashBalance.beginningBalance[i] = newFutureCashFlow.cashBalance.endingBalance[i-1];
       }
       
       newFutureCashFlow.cashBalance.endingBalance[i] = 
-        newFutureCashFlow.cashBalance.beginningBalance[i] + newFutureCashFlow.cashBalance.netChange[i];
+        newFutureCashFlow.cashBalance.beginningBalance[i] + 
+        newFutureCashFlow.cashBalance.netChange[i];
+      
+      // Calculate metrics
+      newFutureCashFlow.metrics.freeCashFlow[i] = 
+        newFutureCashFlow.operatingActivities.netOperatingCashFlow[i] - 
+        newFutureCashFlow.investingActivities.capitalExpenditures[i];
+      
+      // Debt coverage ratio (operating cash flow / debt repayment)
+      newFutureCashFlow.metrics.debtCoverageRatio[i] = 
+        newFutureCashFlow.financingActivities.debtRepayment[i] > 0 
+          ? newFutureCashFlow.operatingActivities.netOperatingCashFlow[i] / 
+            newFutureCashFlow.financingActivities.debtRepayment[i] 
+          : 0;
+      
+      // Cash to debt ratio
+      newFutureCashFlow.metrics.cashToDebtRatio[i] = 
+        totalDebt > 0 
+          ? newFutureCashFlow.cashBalance.endingBalance[i] / totalDebt 
+          : 0;
+      
+      // Update previous month values for next iteration
+      prevMonthRevenue = newFutureCashFlow.operatingActivities.revenue[i];
+      prevMonthCogs = newFutureCashFlow.operatingActivities.cogs[i];
     }
     
     setFutureCashFlow(newFutureCashFlow);
-  }, [financialData, historicalSummary]);
+  }, [financialData, historicalSummary, projectionParams]);
+  
+  // Chart data preparation
+  const cashFlowChartData = useMemo(() => {
+    return {
+      labels: FORECAST_MONTHS.map(m => m.label),
+      datasets: [
+        {
+          label: 'Operating Cash Flow',
+          data: futureCashFlow.operatingActivities.netOperatingCashFlow,
+          borderColor: 'rgb(54, 162, 235)',
+          backgroundColor: 'rgba(54, 162, 235, 0.1)',
+          borderWidth: 2,
+          fill: false,
+          tension: 0.1
+        },
+        {
+          label: 'Investing Cash Flow',
+          data: futureCashFlow.investingActivities.netInvestingCashFlow,
+          borderColor: 'rgb(255, 99, 132)',
+          backgroundColor: 'rgba(255, 99, 132, 0.1)',
+          borderWidth: 2,
+          fill: false,
+          tension: 0.1
+        },
+        {
+          label: 'Financing Cash Flow',
+          data: futureCashFlow.financingActivities.netFinancingCashFlow,
+          borderColor: 'rgb(75, 192, 192)',
+          backgroundColor: 'rgba(75, 192, 192, 0.1)',
+          borderWidth: 2,
+          fill: false,
+          tension: 0.1
+        },
+        {
+          label: 'Net Change in Cash',
+          data: futureCashFlow.cashBalance.netChange,
+          borderColor: 'rgb(153, 102, 255)',
+          backgroundColor: 'rgba(153, 102, 255, 0.1)',
+          borderWidth: 3,
+          fill: false,
+          tension: 0.1
+        }
+      ]
+    };
+  }, [futureCashFlow]);
+  
+  const cashBalanceChartData = useMemo(() => {
+    return {
+      labels: FORECAST_MONTHS.map(m => m.label),
+      datasets: [
+        {
+          label: 'Ending Cash Balance',
+          data: futureCashFlow.cashBalance.endingBalance,
+          borderColor: 'rgb(255, 159, 64)',
+          backgroundColor: 'rgba(255, 159, 64, 0.2)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.1
+        }
+      ]
+    };
+  }, [futureCashFlow]);
+  
+  const metricsChartData = useMemo(() => {
+    return {
+      labels: FORECAST_MONTHS.map(m => m.label),
+      datasets: [
+        {
+          label: 'Free Cash Flow',
+          data: futureCashFlow.metrics.freeCashFlow,
+          borderColor: 'rgb(46, 204, 113)',
+          backgroundColor: 'rgba(46, 204, 113, 0.1)',
+          borderWidth: 2,
+          fill: false,
+          tension: 0.1,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Debt Coverage Ratio',
+          data: futureCashFlow.metrics.debtCoverageRatio,
+          borderColor: 'rgb(155, 89, 182)',
+          backgroundColor: 'rgba(155, 89, 182, 0.1)',
+          borderWidth: 2,
+          fill: false,
+          tension: 0.1,
+          yAxisID: 'y1'
+        }
+      ]
+    };
+  }, [futureCashFlow]);
 
   // Formatting function
   const formatCurrency = (amount: number) => {
     return isNaN(amount) || !isFinite(amount) 
       ? '-' 
       : '$' + Math.round(amount).toLocaleString();
+  };
+  
+  // Format ratio with 2 decimal places
+  const formatRatio = (value: number) => {
+    return isNaN(value) || !isFinite(value)
+      ? '-'
+      : value.toFixed(2) + 'x';
+  };
+
+  // Format percentage
+  const formatPercent = (value: number) => {
+    return isNaN(value) || !isFinite(value)
+      ? '-'
+      : (value * 100).toFixed(1) + '%';
   };
 
   // Color coding for positive/negative values
@@ -445,19 +664,153 @@ export default function MonthlyCashFlow() {
             </p>
           </div>
           <div className="bg-white p-4 rounded-lg shadow-sm">
-            <h4 className="text-sm text-neutral-500 mb-1">Cash Growth</h4>
+            <h4 className="text-sm text-neutral-500 mb-1">Avg. Free Cash Flow</h4>
             <p className={`text-2xl font-bold ${getValueColor(
-              futureCashFlow.cashBalance.endingBalance[11] - futureCashFlow.cashBalance.beginningBalance[0]
+              futureCashFlow.metrics.freeCashFlow.reduce((a, b) => a + b, 0) / 12
             )}`}>
-              {formatCurrency(futureCashFlow.cashBalance.endingBalance[11] - futureCashFlow.cashBalance.beginningBalance[0])}
-              &nbsp;
-              {futureCashFlow.cashBalance.beginningBalance[0] > 0 && 
-                `(${((futureCashFlow.cashBalance.endingBalance[11] / futureCashFlow.cashBalance.beginningBalance[0] - 1) * 100).toFixed(1)}%)`
-              }
+              {formatCurrency(futureCashFlow.metrics.freeCashFlow.reduce((a, b) => a + b, 0) / 12)}
+              <span className="text-sm font-normal text-neutral-500 ml-1">/ month</span>
             </p>
           </div>
         </div>
       </Card>
+
+      {/* Cash Flow Charts */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className="p-4 shadow-sm">
+          <h3 className="text-lg font-semibold mb-4">Monthly Cash Flows</h3>
+          <div className="h-80">
+            <Line
+              data={cashFlowChartData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  x: {
+                    grid: {
+                      display: false
+                    }
+                  },
+                  y: {
+                    title: {
+                      display: true,
+                      text: 'Amount ($)'
+                    }
+                  }
+                },
+                plugins: {
+                  legend: {
+                    position: 'bottom'
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label: function(context) {
+                        return context.dataset.label + ': ' + formatCurrency(context.raw as number);
+                      }
+                    }
+                  }
+                }
+              }}
+            />
+          </div>
+        </Card>
+        
+        <Card className="p-4 shadow-sm">
+          <h3 className="text-lg font-semibold mb-4">Cash Balance Projection</h3>
+          <div className="h-80">
+            <Line
+              data={cashBalanceChartData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  x: {
+                    grid: {
+                      display: false
+                    }
+                  },
+                  y: {
+                    title: {
+                      display: true,
+                      text: 'Amount ($)'
+                    },
+                    beginAtZero: true
+                  }
+                },
+                plugins: {
+                  legend: {
+                    position: 'bottom'
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label: function(context) {
+                        return context.dataset.label + ': ' + formatCurrency(context.raw as number);
+                      }
+                    }
+                  }
+                }
+              }}
+            />
+          </div>
+        </Card>
+        
+        <Card className="p-4 shadow-sm md:col-span-2">
+          <h3 className="text-lg font-semibold mb-4">Key Financial Metrics</h3>
+          <div className="h-80">
+            <Line
+              data={metricsChartData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  x: {
+                    grid: {
+                      display: false
+                    }
+                  },
+                  y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                      display: true,
+                      text: 'Free Cash Flow ($)'
+                    }
+                  },
+                  y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                      display: true,
+                      text: 'Debt Coverage Ratio (x)'
+                    },
+                    grid: {
+                      drawOnChartArea: false
+                    }
+                  }
+                },
+                plugins: {
+                  legend: {
+                    position: 'bottom'
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label: function(context) {
+                        if (context.dataset.label === 'Free Cash Flow') {
+                          return context.dataset.label + ': ' + formatCurrency(context.raw as number);
+                        } else {
+                          return context.dataset.label + ': ' + formatRatio(context.raw as number);
+                        }
+                      }
+                    }
+                  }
+                }
+              }}
+            />
+          </div>
+        </Card>
+      </div>
 
       {/* Monthly Cash Flow Table */}
       <div className="bg-white shadow-sm rounded-lg overflow-hidden border border-neutral-200">
@@ -493,6 +846,20 @@ export default function MonthlyCashFlow() {
                 <TableCell className="bg-blue-50/30">{formatCurrency(historicalSummary['2023'].revenue)}</TableCell>
                 <TableCell className="bg-blue-50/30">{formatCurrency(historicalSummary['2024'].revenue)}</TableCell>
                 {futureCashFlow.operatingActivities.revenue.map((value, i) => (
+                  <TableCell 
+                    key={i} 
+                    className={i === 0 ? "bg-green-50/30" : (i % 3 === 0 ? "bg-green-50/20" : "")}
+                  >
+                    {formatCurrency(value)}
+                  </TableCell>
+                ))}
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">COGS</TableCell>
+                <TableCell className="bg-blue-50/30">{formatCurrency(historicalSummary['2022'].cogs)}</TableCell>
+                <TableCell className="bg-blue-50/30">{formatCurrency(historicalSummary['2023'].cogs)}</TableCell>
+                <TableCell className="bg-blue-50/30">{formatCurrency(historicalSummary['2024'].cogs)}</TableCell>
+                {futureCashFlow.operatingActivities.cogs.map((value, i) => (
                   <TableCell 
                     key={i} 
                     className={i === 0 ? "bg-green-50/30" : (i % 3 === 0 ? "bg-green-50/20" : "")}
@@ -776,6 +1143,73 @@ export default function MonthlyCashFlow() {
                   </TableCell>
                 ))}
               </TableRow>
+              
+              {/* Financial Metrics Section */}
+              <TableRow className="bg-neutral-50">
+                <TableCell colSpan={16} className="font-bold text-neutral-700">
+                  Financial Metrics:
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Free Cash Flow</TableCell>
+                <TableCell className={`bg-blue-50/30 font-semibold ${getValueColor(historicalSummary['2022'].metrics.freeCashFlow)}`}>
+                  {formatCurrency(historicalSummary['2022'].metrics.freeCashFlow)}
+                </TableCell>
+                <TableCell className={`bg-blue-50/30 font-semibold ${getValueColor(historicalSummary['2023'].metrics.freeCashFlow)}`}>
+                  {formatCurrency(historicalSummary['2023'].metrics.freeCashFlow)}
+                </TableCell>
+                <TableCell className={`bg-blue-50/30 font-semibold ${getValueColor(historicalSummary['2024'].metrics.freeCashFlow)}`}>
+                  {formatCurrency(historicalSummary['2024'].metrics.freeCashFlow)}
+                </TableCell>
+                {futureCashFlow.metrics.freeCashFlow.map((value, i) => (
+                  <TableCell 
+                    key={i} 
+                    className={`font-semibold ${i === 0 ? "bg-green-50/30" : (i % 3 === 0 ? "bg-green-50/20" : "")} ${getValueColor(value)}`}
+                  >
+                    {formatCurrency(value)}
+                  </TableCell>
+                ))}
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Debt Coverage Ratio</TableCell>
+                <TableCell className={`bg-blue-50/30 font-semibold`}>
+                  {formatRatio(historicalSummary['2022'].metrics.debtCoverageRatio)}
+                </TableCell>
+                <TableCell className={`bg-blue-50/30 font-semibold`}>
+                  {formatRatio(historicalSummary['2023'].metrics.debtCoverageRatio)}
+                </TableCell>
+                <TableCell className={`bg-blue-50/30 font-semibold`}>
+                  {formatRatio(historicalSummary['2024'].metrics.debtCoverageRatio)}
+                </TableCell>
+                {futureCashFlow.metrics.debtCoverageRatio.map((value, i) => (
+                  <TableCell 
+                    key={i} 
+                    className={`font-semibold ${i === 0 ? "bg-green-50/30" : (i % 3 === 0 ? "bg-green-50/20" : "")}`}
+                  >
+                    {formatRatio(value)}
+                  </TableCell>
+                ))}
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Cash to Debt Ratio</TableCell>
+                <TableCell className={`bg-blue-50/30 font-semibold`}>
+                  {formatRatio(historicalSummary['2022'].metrics.cashToDebtRatio)}
+                </TableCell>
+                <TableCell className={`bg-blue-50/30 font-semibold`}>
+                  {formatRatio(historicalSummary['2023'].metrics.cashToDebtRatio)}
+                </TableCell>
+                <TableCell className={`bg-blue-50/30 font-semibold`}>
+                  {formatRatio(historicalSummary['2024'].metrics.cashToDebtRatio)}
+                </TableCell>
+                {futureCashFlow.metrics.cashToDebtRatio.map((value, i) => (
+                  <TableCell 
+                    key={i} 
+                    className={`font-semibold ${i === 0 ? "bg-green-50/30" : (i % 3 === 0 ? "bg-green-50/20" : "")}`}
+                  >
+                    {formatRatio(value)}
+                  </TableCell>
+                ))}
+              </TableRow>
             </TableBody>
           </Table>
         </div>
@@ -785,13 +1219,17 @@ export default function MonthlyCashFlow() {
       <Card className="p-5 bg-blue-50">
         <h3 className="text-lg font-semibold mb-3 text-blue-700">Forecast Methodology</h3>
         <div className="space-y-3 text-sm">
-          <p><strong>Historical Annual Figures:</strong> The first 3 columns show annual totals for 2022, 2023, and 2024.</p>
-          <p><strong>Forward Projection:</strong> Shows 12 months forecast from April 2025 through March 2026.</p>
-          <p><strong>Revenue Growth:</strong> Calculated at 8% annual growth rate (approximately 0.64% monthly compound growth).</p>
-          <p><strong>Working Capital:</strong> Based on days outstanding metrics - receivables (45 days), inventory (60 days), and payables (30 days).</p>
-          <p><strong>Investment Schedule:</strong> Capital expenditures are distributed with seasonal patterns to reflect typical investment cycles.</p>
-          <p><strong>Financing:</strong> Includes quarterly dividend payments and monthly debt repayments based on historical patterns.</p>
-          <p className="text-xs text-neutral-500 italic mt-2">Note: This forecast model projects from the latest historical data (2024). The cash flow patterns can be adjusted to match your specific business seasonality and operational cycles.</p>
+          <p><strong>Historical Annual Figures:</strong> First 3 columns show annual totals for 2022, 2023, and 2024.</p>
+          <p><strong>Monthly Distribution:</strong> Annual figures have been divided by 12 and adjusted for seasonality to create monthly projections.</p>
+          <p><strong>Forward Projections:</strong> Calculated with growth rates from the financial projections parameters.</p>
+          <p><strong>Working Capital:</strong> Based on receivable days (45), inventory days (60), and payable days (30) industry standards.</p>
+          <p><strong>Key Metrics:</strong></p>
+          <ul className="list-disc pl-6 space-y-1">
+            <li><strong>Free Cash Flow:</strong> Operating cash flow minus capital expenditures</li>
+            <li><strong>Debt Coverage Ratio:</strong> Operating cash flow divided by debt repayment amount</li>
+            <li><strong>Cash to Debt Ratio:</strong> Ending cash balance divided by total debt</li>
+          </ul>
+          <p className="text-xs text-neutral-500 italic mt-2">Note: The forecast reflects monthly splits of annual data with seasonality applied. Monthly patterns can be further refined based on specific business cycles.</p>
         </div>
       </Card>
     </div>
