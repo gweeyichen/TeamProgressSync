@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useUser } from '@/contexts/UserContext';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { showNotification } from '@/components/ui/notification';
 import {
   Dialog,
@@ -24,10 +26,32 @@ export default function SaveLoadProject({ onSave, onLoad }: SaveLoadProjectProps
   const [isLoading, setIsLoading] = useState(false);
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [isLoadDialogOpen, setIsLoadDialogOpen] = useState(false);
+  const [fileName, setFileName] = useState('');
+  const [savedProjects, setSavedProjects] = useState<string[]>([]);
+  const [selectedProject, setSelectedProject] = useState('');
+
+  // Fetch saved projects on component mount
+  useEffect(() => {
+    const fetchSavedProjects = async () => {
+      try {
+        const response = await fetch('/api/saved-projects');
+        const projects = await response.json();
+        setSavedProjects(projects);
+      } catch (error) {
+        console.error('Error fetching saved projects:', error);
+      }
+    };
+    fetchSavedProjects();
+  }, []);
 
   const handleSave = async () => {
     if (!userId) {
       showNotification('Please log in to save your project', 'error');
+      return;
+    }
+
+    if (!fileName.trim()) {
+      showNotification('Please enter a file name', 'error');
       return;
     }
 
@@ -36,6 +60,7 @@ export default function SaveLoadProject({ onSave, onLoad }: SaveLoadProjectProps
       await onSave();
       showNotification('Project saved successfully', 'success');
       setIsSaveDialogOpen(false);
+      setFileName('');
     } catch (error) {
       console.error('Error saving project:', error);
       showNotification('Failed to save project', 'error');
@@ -50,11 +75,17 @@ export default function SaveLoadProject({ onSave, onLoad }: SaveLoadProjectProps
       return;
     }
 
+    if (!selectedProject) {
+      showNotification('Please select a project to load', 'error');
+      return;
+    }
+
     setIsLoading(true);
     try {
       await onLoad();
       showNotification('Project loaded successfully', 'success');
       setIsLoadDialogOpen(false);
+      setSelectedProject('');
     } catch (error) {
       console.error('Error loading project:', error);
       showNotification('Failed to load project', 'error');
@@ -77,12 +108,19 @@ export default function SaveLoadProject({ onSave, onLoad }: SaveLoadProjectProps
           <DialogHeader>
             <DialogTitle>Save Project</DialogTitle>
             <DialogDescription>
-              Save your current financial model to access it later. This will save all your
-              historical financials, projections, valuation parameters, and investment models.
+              Enter a name for your project and save your current financial model.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex items-center justify-center py-6">
-            <FileCheck className="h-16 w-16 text-primary" />
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="fileName" className="text-sm font-medium">Project Name</label>
+              <Input
+                id="fileName"
+                placeholder="Enter project name"
+                value={fileName}
+                onChange={(e) => setFileName(e.target.value)}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsSaveDialogOpen(false)}>
@@ -107,12 +145,26 @@ export default function SaveLoadProject({ onSave, onLoad }: SaveLoadProjectProps
           <DialogHeader>
             <DialogTitle>Load Project</DialogTitle>
             <DialogDescription>
-              Load your previously saved financial model. This will replace your current work with the
-              saved data. Make sure to save your current work if needed.
+              Select a previously saved project to load.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex items-center justify-center py-6">
-            <Download className="h-16 w-16 text-primary" />
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="projectSelect" className="text-sm font-medium">Select Project</label>
+              <select
+                id="projectSelect"
+                className="w-full rounded-md border border-input bg-background px-3 py-2"
+                value={selectedProject}
+                onChange={(e) => setSelectedProject(e.target.value)}
+              >
+                <option value="">Select a project</option>
+                {savedProjects.map((project) => (
+                  <option key={project} value={project}>
+                    {project}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsLoadDialogOpen(false)}>
