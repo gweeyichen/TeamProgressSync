@@ -6,7 +6,6 @@ import { useUser } from '@/contexts/UserContext';
 import { showNotification } from '@/components/ui/notification';
 
 export default function Header() {
-  const [language, setLanguage] = useState<Language>('en');
   const { toast } = useToast();
   const { 
     saveFinancialData, 
@@ -16,24 +15,6 @@ export default function Header() {
     saveInvestmentModel,
     loadInvestmentModel
   } = useUser();
-  
-  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newLanguage = e.target.value as Language;
-    setLanguage(newLanguage);
-    
-    const languageNames = {
-      en: "English",
-      es: "Español",
-      fr: "Français",
-      de: "Deutsch",
-      zh: "中文"
-    };
-    
-    toast({
-      title: "Language Changed",
-      description: `Language changed to ${languageNames[newLanguage]}`,
-    });
-  };
   
   const handleExportReport = () => {
     toast({
@@ -173,23 +154,7 @@ export default function Header() {
           <div className="flex items-center space-x-4">
             <SaveLoadProject onSave={handleSaveProject} onLoad={handleLoadProject} />
             
-            <div className="relative">
-              <select 
-                id="language-selector" 
-                value={language}
-                onChange={handleLanguageChange}
-                className="bg-primary-light text-white py-1 pl-3 pr-8 rounded-md border border-primary-light appearance-none cursor-pointer text-sm"
-              >
-                <option value="en">English</option>
-                <option value="es">Español</option>
-                <option value="fr">Français</option>
-                <option value="de">Deutsch</option>
-                <option value="zh">中文</option>
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-white">
-                <i className="ri-arrow-down-s-line"></i>
-              </div>
-            </div>
+            
             
             <button 
               onClick={handleExportReport}

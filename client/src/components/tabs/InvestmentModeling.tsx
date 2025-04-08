@@ -187,7 +187,8 @@ export default function InvestmentModeling() {
     };
 
     setInvestmentResults(calculateInvestmentReturns());
-  }, [investmentParams, projectedEBITDA, getProjectionYearValue]);
+  }, [investmentParams, projectedEBITDA, getProjectionYearValue]); // Added dependencies to prevent infinite loop
+
 
   // Format currency in thousands
   const formatCurrency = (value: number) => {
