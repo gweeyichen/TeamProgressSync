@@ -256,86 +256,59 @@ export default function MonthlyCashFlow() {
     };
   }, [historicalFinancials]);
 
-  // Calculate historical annual summary
+  // Use cash flow data directly from Historical Financials tab
   useEffect(() => {
-    if (!financialData) return;
+    if (!financialData || !historicalFinancials) return;
 
     const years: FinancialYear[] = ['2022', '2023', '2024'];
     const newHistoricalSummary = {...historicalSummary};
 
     years.forEach(year => {
       const data = financialData[year];
-      let prevYear = year === '2022' ? null : years[years.indexOf(year) - 1];
+      const cashFlowData = historicalFinancials.cashFlow[year];
       
-      // Annual figures calculation
-      const annualDepreciation = data.fixedAssets * 0.1; // Assume 10% depreciation rate
+      // Get values directly from cash flow data in Historical Financials
+      const depreciation = cashFlowData.depreciation || 0;
+      const receivablesChange = cashFlowData.accountsReceivableChange || 0;
+      const inventoryChange = cashFlowData.inventoryChange || 0;
+      const payablesChange = cashFlowData.accountsPayableChange || 0;
+      const netOperatingCashFlow = cashFlowData.netCashOperating || 0;
+      const capitalExpenditures = cashFlowData.capitalExpenditures || 0;
+      const netInvestingCashFlow = cashFlowData.netCashInvesting || 0;
+      const dividendsPaid = cashFlowData.dividendsPaid || 0;
+      const debtChange = cashFlowData.debtChange || 0;
+      const netFinancingCashFlow = cashFlowData.netCashFinancing || 0;
+      const netCashChange = cashFlowData.netCashChange || 0;
       
-      // Balance sheet changes from previous year
-      let receivablesChange = 0;
-      let inventoryChange = 0;
-      let payablesChange = 0;
-      
-      if (year === '2022') {
-        // For 2022, we don't have previous year data, so we'll approximate
-        receivablesChange = -data.accountsReceivable * 0.1; // Assume 10% reduction
-        inventoryChange = -data.inventory * 0.15; // Assume 15% reduction
-        payablesChange = data.accountsPayable * 0.05; // Assume 5% increase
-      } else if (prevYear) {
-        receivablesChange = data.accountsReceivable - financialData[prevYear].accountsReceivable;
-        inventoryChange = data.inventory - financialData[prevYear].inventory;
-        payablesChange = data.accountsPayable - financialData[prevYear].accountsPayable;
-      }
-      
-      // Capital expenditures
-      let annualCapEx = 0;
-      if (year === '2022') {
-        annualCapEx = data.fixedAssets * 0.15; // Assume 15% of fixed assets
-      } else if (prevYear) {
-        annualCapEx = Math.max(0, data.fixedAssets - financialData[prevYear].fixedAssets + annualDepreciation);
-      }
-      
-      // Debt and dividends
+      // Debt calculations - needed for metrics
       const totalDebt = data.shortTermDebt + data.longTermDebt;
-      const annualDebtRepayment = totalDebt * 0.1; // Assume 10% of debt is repaid annually
-      const annualDividends = data.revenue * 0.02; // 2% of revenue as dividends
-      
-      // Operating cash flow
-      const annualOperatingCashFlow = data.revenue - data.cogs - data.revenue * 0.2 + annualDepreciation - 
-                                     receivablesChange - inventoryChange + payablesChange;
-      
-      // Net investing cash flow
-      const annualInvestingCashFlow = -annualCapEx;
-      
-      // Net financing cash flow
-      const annualFinancingCashFlow = -annualDividends - annualDebtRepayment;
-      
-      // Net change in cash
-      const annualNetChange = annualOperatingCashFlow + annualInvestingCashFlow + annualFinancingCashFlow;
+      // Estimate debt repayment as the negative of debt change if positive, or a percentage of total debt
+      const debtRepayment = debtChange < 0 ? -debtChange : (dividendsPaid > 0 ? totalDebt * 0.1 : 0);
       
       // Beginning and ending cash balances
-      const beginningBalance = data.cash - annualNetChange;
       const endingBalance = data.cash;
+      const beginningBalance = endingBalance - netCashChange;
       
       // Advanced metrics
-      const freeCashFlow = annualOperatingCashFlow - annualCapEx;
-      const debtCoverageRatio = totalDebt > 0 ? annualOperatingCashFlow / annualDebtRepayment : 0;
+      const freeCashFlow = netOperatingCashFlow - capitalExpenditures;
+      const debtCoverageRatio = debtRepayment > 0 ? netOperatingCashFlow / debtRepayment : 0;
       const cashToDebtRatio = totalDebt > 0 ? endingBalance / totalDebt : 0;
       
       // Set the annual summary
       newHistoricalSummary[year] = {
         revenue: data.revenue,
         cogs: data.cogs,
-        depreciation: annualDepreciation,
+        depreciation: depreciation,
         receivablesChange: receivablesChange,
         inventoryChange: inventoryChange,
         payablesChange: payablesChange,
-        netOperatingCashFlow: annualOperatingCashFlow,
-        capitalExpenditures: annualCapEx,
-        netInvestingCashFlow: annualInvestingCashFlow,
-        dividendsPaid: annualDividends,
-        debtRepayment: annualDebtRepayment,
-        netFinancingCashFlow: annualFinancingCashFlow,
-        netChange: annualNetChange,
+        netOperatingCashFlow: netOperatingCashFlow,
+        capitalExpenditures: capitalExpenditures,
+        netInvestingCashFlow: netInvestingCashFlow,
+        dividendsPaid: dividendsPaid,
+        debtRepayment: debtRepayment,
+        netFinancingCashFlow: netFinancingCashFlow,
+        netChange: netCashChange,
         beginningBalance: beginningBalance,
         endingBalance: endingBalance,
         metrics: {
@@ -347,7 +320,7 @@ export default function MonthlyCashFlow() {
     });
     
     setHistoricalSummary(newHistoricalSummary);
-  }, [financialData]);
+  }, [financialData, historicalFinancials]);
 
   // Calculate future cash flow (12 months from April 2025)
   useEffect(() => {

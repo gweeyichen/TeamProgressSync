@@ -10,9 +10,51 @@ import { useUser } from '@/contexts/UserContext';
 // Define initial financial data structure
 const initialFinancialData = {
   incomeStatement: {
-    '2022': { revenue: 5000, cogs: 1750 },
-    '2023': { revenue: 6200, cogs: 2170 },
-    '2024': { revenue: 7800, cogs: 2730 }
+    '2022': { 
+      revenue: 5000, 
+      cogs: 1750,
+      researchDevelopment: 500,
+      salesMarketing: 700,
+      generalAdmin: 400,
+      interestExpense: 120,
+      otherIncome: 30,
+      incomeTax: 360,
+      grossProfit: 3250,
+      totalOperatingExpenses: 1600,
+      operatingIncome: 1650,
+      incomeBeforeTax: 1560,
+      netIncome: 1200
+    },
+    '2023': { 
+      revenue: 6200, 
+      cogs: 2170,
+      researchDevelopment: 620,
+      salesMarketing: 870,
+      generalAdmin: 500,
+      interestExpense: 150,
+      otherIncome: 40,
+      incomeTax: 450,
+      grossProfit: 4030,
+      totalOperatingExpenses: 1990,
+      operatingIncome: 2040,
+      incomeBeforeTax: 1930,
+      netIncome: 1480
+    },
+    '2024': { 
+      revenue: 7800, 
+      cogs: 2730,
+      researchDevelopment: 780,
+      salesMarketing: 1090,
+      generalAdmin: 620,
+      interestExpense: 180,
+      otherIncome: 50,
+      incomeTax: 560,
+      grossProfit: 5070,
+      totalOperatingExpenses: 2490,
+      operatingIncome: 2580,
+      incomeBeforeTax: 2450,
+      netIncome: 1890
+    }
   },
   balanceSheet: {
     '2022': { 
@@ -23,7 +65,10 @@ const initialFinancialData = {
       accountsPayable: 500,
       shortTermDebt: 700,
       longTermDebt: 1000,
-      equity: 2300
+      equity: 2300,
+      totalAssets: 4500,
+      totalLiabilities: 2200,
+      totalLiabilitiesEquity: 4500
     },
     '2023': { 
       cash: 1300, 
@@ -33,7 +78,10 @@ const initialFinancialData = {
       accountsPayable: 600,
       shortTermDebt: 900,
       longTermDebt: 1400,
-      equity: 2900
+      equity: 2900,
+      totalAssets: 5800,
+      totalLiabilities: 2900,
+      totalLiabilitiesEquity: 5800
     },
     '2024': { 
       cash: 1700, 
@@ -43,13 +91,55 @@ const initialFinancialData = {
       accountsPayable: 700,
       shortTermDebt: 1100,
       longTermDebt: 1700,
-      equity: 3700
+      equity: 3700,
+      totalAssets: 7200,
+      totalLiabilities: 3500,
+      totalLiabilitiesEquity: 7200
     }
   },
   cashFlow: {
-    '2022': { netIncome: 850, depreciation: 200, capitalExpenditures: 400 },
-    '2023': { netIncome: 1050, depreciation: 270, capitalExpenditures: 500 },
-    '2024': { netIncome: 1320, depreciation: 340, capitalExpenditures: 600 }
+    '2022': { 
+      netIncome: 850, 
+      depreciation: 200, 
+      accountsReceivableChange: -80, 
+      inventoryChange: -105, 
+      accountsPayableChange: 25, 
+      netCashOperating: 990, 
+      capitalExpenditures: 400, 
+      netCashInvesting: -400, 
+      debtChange: 300, 
+      dividendsPaid: 100, 
+      netCashFinancing: 200, 
+      netCashChange: 790 
+    },
+    '2023': { 
+      netIncome: 1050, 
+      depreciation: 270, 
+      accountsReceivableChange: -200, 
+      inventoryChange: -100, 
+      accountsPayableChange: 100, 
+      netCashOperating: 1120, 
+      capitalExpenditures: 500, 
+      netCashInvesting: -500, 
+      debtChange: 600, 
+      dividendsPaid: 120, 
+      netCashFinancing: 480, 
+      netCashChange: 1100 
+    },
+    '2024': { 
+      netIncome: 1320, 
+      depreciation: 340, 
+      accountsReceivableChange: -200, 
+      inventoryChange: -100, 
+      accountsPayableChange: 100, 
+      netCashOperating: 1460, 
+      capitalExpenditures: 600, 
+      netCashInvesting: -600, 
+      debtChange: 500, 
+      dividendsPaid: 156, 
+      netCashFinancing: 344, 
+      netCashChange: 1204 
+    }
   }
 };
 
@@ -65,7 +155,14 @@ export default function HistoricalFinancials() {
   const { historicalFinancials, setHistoricalFinancials } = useUser();
   
   // Income Statement rows definition
-  const incomeStatementRows = [
+  const incomeStatementRows: { 
+    id: string; 
+    label: string; 
+    editable?: boolean; 
+    type?: "header" | "total" | "subheader" | "standard"; 
+    tooltip?: string; 
+    validateField?: boolean; 
+  }[] = [
     { id: 'revenue', label: 'Revenue', editable: true, tooltip: 'Total revenue from sales', validateField: true },
     { id: 'cogs', label: 'Cost of Goods Sold', editable: true, tooltip: 'Direct costs attributable to goods sold', validateField: true },
     { id: 'grossProfit', label: 'Gross Profit', editable: false, type: 'total' },
@@ -83,7 +180,14 @@ export default function HistoricalFinancials() {
   ];
   
   // Balance Sheet rows definition
-  const balanceSheetRows = [
+  const balanceSheetRows: { 
+    id: string; 
+    label: string; 
+    editable?: boolean; 
+    type?: "header" | "total" | "subheader" | "standard"; 
+    tooltip?: string; 
+    validateField?: boolean; 
+  }[] = [
     { id: 'assets', label: 'Assets', type: 'header' },
     { id: 'cash', label: 'Cash & Cash Equivalents', editable: true, validateField: true },
     { id: 'accountsReceivable', label: 'Accounts Receivable', editable: true, validateField: true },
@@ -100,7 +204,14 @@ export default function HistoricalFinancials() {
   ];
   
   // Cash Flow Statement rows definition
-  const cashFlowRows = [
+  const cashFlowRows: { 
+    id: string; 
+    label: string; 
+    editable?: boolean; 
+    type?: "header" | "total" | "subheader" | "standard"; 
+    tooltip?: string; 
+    validateField?: boolean; 
+  }[] = [
     { id: 'operatingActivities', label: 'Operating Activities', type: 'header' },
     { id: 'netIncome', label: 'Net Income', editable: true, validateField: true },
     { id: 'depreciation', label: 'Depreciation & Amortization', editable: true, validateField: true },
@@ -277,6 +388,14 @@ export default function HistoricalFinancials() {
           researchDevelopment: data.expenses["Research & Development"][0],
           salesMarketing: data.expenses["Sales & Marketing"][0],
           generalAdmin: data.expenses["General & Administrative"][0],
+          interestExpense: data.revenue[0] * 0.02, // Estimate interest expense as 2% of revenue
+          otherIncome: data.revenue[0] * 0.005, // Estimate other income as 0.5% of revenue
+          incomeTax: 0, // Will be calculated
+          grossProfit: 0, // Will be calculated
+          totalOperatingExpenses: 0, // Will be calculated
+          operatingIncome: 0, // Will be calculated
+          incomeBeforeTax: 0, // Will be calculated
+          netIncome: 0 // Will be calculated
         },
         '2023': { 
           revenue: data.revenue[1], 
@@ -284,6 +403,14 @@ export default function HistoricalFinancials() {
           researchDevelopment: data.expenses["Research & Development"][1],
           salesMarketing: data.expenses["Sales & Marketing"][1],
           generalAdmin: data.expenses["General & Administrative"][1],
+          interestExpense: data.revenue[1] * 0.02, // Estimate interest expense as 2% of revenue
+          otherIncome: data.revenue[1] * 0.005, // Estimate other income as 0.5% of revenue
+          incomeTax: 0, // Will be calculated
+          grossProfit: 0, // Will be calculated
+          totalOperatingExpenses: 0, // Will be calculated
+          operatingIncome: 0, // Will be calculated
+          incomeBeforeTax: 0, // Will be calculated
+          netIncome: 0 // Will be calculated
         },
         '2024': { 
           revenue: data.revenue[2], 
@@ -291,6 +418,14 @@ export default function HistoricalFinancials() {
           researchDevelopment: data.expenses["Research & Development"][2],
           salesMarketing: data.expenses["Sales & Marketing"][2],
           generalAdmin: data.expenses["General & Administrative"][2],
+          interestExpense: data.revenue[2] * 0.02, // Estimate interest expense as 2% of revenue
+          otherIncome: data.revenue[2] * 0.005, // Estimate other income as 0.5% of revenue
+          incomeTax: 0, // Will be calculated
+          grossProfit: 0, // Will be calculated
+          totalOperatingExpenses: 0, // Will be calculated
+          operatingIncome: 0, // Will be calculated
+          incomeBeforeTax: 0, // Will be calculated
+          netIncome: 0 // Will be calculated
         }
       },
       balanceSheet: {
@@ -302,7 +437,10 @@ export default function HistoricalFinancials() {
           accountsPayable: data.liabilities["Accounts Payable"][0],
           shortTermDebt: data.liabilities["Short-term Debt"][0],
           longTermDebt: data.liabilities["Long-term Debt"][0],
-          equity: 0 // Will be calculated
+          equity: 0, // Will be calculated
+          totalAssets: 0, // Will be calculated
+          totalLiabilities: 0, // Will be calculated
+          totalLiabilitiesEquity: 0 // Will be calculated
         },
         '2023': { 
           cash: data.assets["Cash & Equivalents"][1],
@@ -312,7 +450,10 @@ export default function HistoricalFinancials() {
           accountsPayable: data.liabilities["Accounts Payable"][1],
           shortTermDebt: data.liabilities["Short-term Debt"][1],
           longTermDebt: data.liabilities["Long-term Debt"][1],
-          equity: 0 // Will be calculated
+          equity: 0, // Will be calculated
+          totalAssets: 0, // Will be calculated
+          totalLiabilities: 0, // Will be calculated
+          totalLiabilitiesEquity: 0 // Will be calculated
         },
         '2024': { 
           cash: data.assets["Cash & Equivalents"][2],
@@ -322,7 +463,10 @@ export default function HistoricalFinancials() {
           accountsPayable: data.liabilities["Accounts Payable"][2],
           shortTermDebt: data.liabilities["Short-term Debt"][2],
           longTermDebt: data.liabilities["Long-term Debt"][2],
-          equity: 0 // Will be calculated
+          equity: 0, // Will be calculated
+          totalAssets: 0, // Will be calculated
+          totalLiabilities: 0, // Will be calculated
+          totalLiabilitiesEquity: 0 // Will be calculated
         }
       },
       cashFlow: { ...financialData.cashFlow } // Keep existing cash flow data for now
