@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { ProjectionYear } from '../../lib/types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useDebt, DebtParameters } from '@/contexts/DebtContext';
 
 interface InvestmentParams {
   initialInvestment: number;
@@ -9,24 +10,29 @@ interface InvestmentParams {
   exitYear: number;
   exitMultiple: number;
   companyGrowthRate: number;
-  // New debt-related parameters
+  terminalGrowthRate: number;
+  // Debt-related parameters
   debtAmount: number;
   debtInterestRate: number;
   debtPaymentType: 'linear' | 'lumpSum';
 }
 
 export default function InvestmentModeling() {
+  // Use shared debt parameters from DebtContext
+  const { debtParameters, setDebtParameters } = useDebt();
+
   const [investmentParams, setInvestmentParams] = useState<InvestmentParams>({
     initialInvestment: 5000, // in thousands
     ownershipStake: 20, // percentage
     investmentYear: 2025,
-    exitYear: 2029,
+    exitYear: 2032,  // Extended to 2032
     exitMultiple: 15, // EBITDA multiple
     companyGrowthRate: 10, // percentage
-    // New debt parameters
-    debtAmount: 3000, // in thousands
-    debtInterestRate: 7, // percentage
-    debtPaymentType: 'linear' as 'linear' | 'lumpSum',
+    terminalGrowthRate: debtParameters.terminalGrowthRate, // From shared debt context
+    // Sync with shared debt parameters from context
+    debtAmount: debtParameters.debtAmount,
+    debtInterestRate: debtParameters.debtInterestRate,
+    debtPaymentType: debtParameters.debtPaymentType,
   });
   
   const [investmentResults, setInvestmentResults] = useState({
@@ -36,14 +42,29 @@ export default function InvestmentModeling() {
     irr: 0,
   });
   
-  // Sample projected EBITDA values (would come from projections tab in a real app)
-  const projectedEBITDA: Record<ProjectionYear, number> = {
+  // Base EBITDA values for the first 5 years
+  const baseProjectedEBITDA: Record<ProjectionYear, number> = {
     '2025': 2574,
     '2026': 2831,
     '2027': 3115,
     '2028': 3426,
     '2029': 3769,
+    '2030': 0, // Will be calculated based on growth rates
+    '2031': 0, // Will be calculated based on growth rates
+    '2032': 0, // Will be calculated based on growth rates
   };
+  
+  // Calculate extended EBITDA values with terminal growth rate
+  const projectedEBITDA = useMemo(() => {
+    const result = { ...baseProjectedEBITDA };
+    
+    // Calculate 2030, 2031, 2032 using terminal growth rate
+    result['2030'] = result['2029'] * (1 + investmentParams.terminalGrowthRate / 100);
+    result['2031'] = result['2030'] * (1 + investmentParams.terminalGrowthRate / 100);
+    result['2032'] = result['2031'] * (1 + investmentParams.terminalGrowthRate / 100);
+    
+    return result;
+  }, [baseProjectedEBITDA, investmentParams.terminalGrowthRate]);
   
   // Helper function to convert number to ProjectionYear type
   const getProjectionYearValue = useMemo(() => {
@@ -53,20 +74,39 @@ export default function InvestmentModeling() {
     };
   }, [projectedEBITDA]);
   
-  // Update investment parameters
+  // Update investment parameters and sync with debt context when relevant
   const handleParamChange = (param: string, value: number) => {
     setInvestmentParams(prev => ({
       ...prev,
       [param]: value
     }));
+    
+    // If updating debt-related parameters, also update the debt context
+    if (param === 'debtAmount') {
+      setDebtParameters({
+        ...debtParameters,
+        debtAmount: value
+      });
+    } else if (param === 'debtInterestRate') {
+      setDebtParameters({
+        ...debtParameters,
+        debtInterestRate: value
+      });
+    } else if (param === 'terminalGrowthRate') {
+      setDebtParameters({
+        ...debtParameters,
+        terminalGrowthRate: value
+      });
+    }
   };
   
-  // Handle payment type toggle
+  // Handle payment type toggle and update the DebtContext
   const handleTogglePaymentType = (type: 'linear' | 'lumpSum') => {
-    setInvestmentParams(prev => ({
-      ...prev,
+    // Update debt context to share with other components
+    setDebtParameters({
+      ...debtParameters,
       debtPaymentType: type
-    }));
+    });
   };
   
   // Calculate cash flow with debt payments
@@ -212,6 +252,9 @@ export default function InvestmentModeling() {
                 <option value={2027} disabled={investmentParams.investmentYear >= 2027}>2027</option>
                 <option value={2028} disabled={investmentParams.investmentYear >= 2028}>2028</option>
                 <option value={2029}>2029</option>
+                <option value={2030}>2030</option>
+                <option value={2031}>2031</option>
+                <option value={2032}>2032</option>
               </select>
             </div>
           </div>
@@ -246,6 +289,25 @@ export default function InvestmentModeling() {
               onChange={(e) => handleParamChange('companyGrowthRate', parseFloat(e.target.value))}
               className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
             />
+          </div>
+          
+          <div className="mb-4">
+            <div className="flex justify-between mb-1">
+              <span>Terminal Growth Rate</span>
+              <span>{investmentParams.terminalGrowthRate}%</span>
+            </div>
+            <input 
+              type="range" 
+              min="0" 
+              max="10" 
+              value={investmentParams.terminalGrowthRate} 
+              step="0.1" 
+              onChange={(e) => handleParamChange('terminalGrowthRate', parseFloat(e.target.value))}
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+            />
+            <p className="mt-1 text-xs text-neutral-500">
+              Applied to years 2030-2032 for extended projection period
+            </p>
           </div>
         </div>
         
@@ -389,6 +451,47 @@ export default function InvestmentModeling() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+      
+      {/* Extended Projections Section */}
+      <div className="border-t border-neutral-200 pt-6 mb-6">
+        <h3 className="text-lg font-semibold mb-3">Extended Projections with Terminal Growth Rate</h3>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-neutral-200">
+            <thead>
+              <tr>
+                <th className="px-4 py-3 bg-neutral-100 text-left text-xs font-medium text-neutral-600 uppercase tracking-wider">Year</th>
+                <th className="px-4 py-3 bg-neutral-100 text-right text-xs font-medium text-neutral-600 uppercase tracking-wider">2029</th>
+                <th className="px-4 py-3 bg-neutral-100 text-right text-xs font-medium text-neutral-600 uppercase tracking-wider">2030</th>
+                <th className="px-4 py-3 bg-neutral-100 text-right text-xs font-medium text-neutral-600 uppercase tracking-wider">2031</th>
+                <th className="px-4 py-3 bg-neutral-100 text-right text-xs font-medium text-neutral-600 uppercase tracking-wider">2032</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-neutral-200">
+              <tr>
+                <td className="px-4 py-2 text-sm font-medium text-neutral-700">EBITDA</td>
+                <td className="px-4 py-2 text-sm text-right">{formatCurrency(projectedEBITDA['2029'])}</td>
+                <td className="px-4 py-2 text-sm text-right">{formatCurrency(projectedEBITDA['2030'])}</td>
+                <td className="px-4 py-2 text-sm text-right">{formatCurrency(projectedEBITDA['2031'])}</td>
+                <td className="px-4 py-2 text-sm text-right">{formatCurrency(projectedEBITDA['2032'])}</td>
+              </tr>
+              <tr>
+                <td className="px-4 py-2 text-sm font-medium text-neutral-700">Growth Rate</td>
+                <td className="px-4 py-2 text-sm text-right">-</td>
+                <td className="px-4 py-2 text-sm text-right">{investmentParams.terminalGrowthRate}%</td>
+                <td className="px-4 py-2 text-sm text-right">{investmentParams.terminalGrowthRate}%</td>
+                <td className="px-4 py-2 text-sm text-right">{investmentParams.terminalGrowthRate}%</td>
+              </tr>
+              <tr>
+                <td className="px-4 py-2 text-sm font-medium text-neutral-700">Company Value (15x)</td>
+                <td className="px-4 py-2 text-sm text-right">{formatCurrency(projectedEBITDA['2029'] * 15)}</td>
+                <td className="px-4 py-2 text-sm text-right">{formatCurrency(projectedEBITDA['2030'] * 15)}</td>
+                <td className="px-4 py-2 text-sm text-right">{formatCurrency(projectedEBITDA['2031'] * 15)}</td>
+                <td className="px-4 py-2 text-sm text-right">{formatCurrency(projectedEBITDA['2032'] * 15)}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
       

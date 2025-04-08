@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import Home from "./pages/Home";
 import { UserProvider } from "@/contexts/UserContext";
+import { DebtProvider } from "@/contexts/DebtContext";
 
 function Router() {
   return (
@@ -19,8 +20,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <UserProvider>
-        <Router />
-        <Toaster />
+        <DebtProvider>
+          <Router />
+          <Toaster />
+        </DebtProvider>
       </UserProvider>
     </QueryClientProvider>
   );

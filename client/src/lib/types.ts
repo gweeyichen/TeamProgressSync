@@ -1,6 +1,6 @@
 // Financial Data Types
 export type FinancialYear = '2022' | '2023' | '2024';
-export type ProjectionYear = '2025' | '2026' | '2027' | '2028' | '2029';
+export type ProjectionYear = '2025' | '2026' | '2027' | '2028' | '2029' | '2030' | '2031' | '2032';
 export type AllYears = FinancialYear | ProjectionYear;
 
 export interface FinancialData {
