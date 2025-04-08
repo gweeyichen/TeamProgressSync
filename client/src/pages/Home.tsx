@@ -7,10 +7,10 @@ import FinancialProjections from "@/components/tabs/FinancialProjections";
 import CompanyValuation from "@/components/tabs/CompanyValuation";
 import InvestmentModeling from "@/components/tabs/InvestmentModeling";
 import WorkingCapital from "@/components/tabs/WorkingCapital";
+import MonthlyCashFlow from "@/components/tabs/MonthlyCashFlow";
 import WeeklyReports from "@/components/tabs/WeeklyReports";
 import AnalysisCharts from "@/components/tabs/AnalysisCharts";
-
-type TabId = 'historical' | 'projections' | 'valuation' | 'investment' | 'working-capital' | 'reports' | 'charts';
+import { TabId } from "@/lib/types";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<TabId>('historical');
@@ -38,6 +38,9 @@ export default function Home() {
             </div>
             <div className={`tab-pane ${activeTab === 'working-capital' ? 'active' : ''}`}>
               <WorkingCapital />
+            </div>
+            <div className={`tab-pane ${activeTab === 'monthly-cash-flow' ? 'active' : ''}`}>
+              <MonthlyCashFlow />
             </div>
             <div className={`tab-pane ${activeTab === 'reports' ? 'active' : ''}`}>
               <WeeklyReports />

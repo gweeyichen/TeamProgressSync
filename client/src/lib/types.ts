@@ -48,3 +48,5 @@ export interface ValidationError {
 
 // Language types
 export type Language = 'en' | 'es' | 'fr' | 'de' | 'zh';
+
+export type TabId = 'historical' | 'projections' | 'valuation' | 'investment' | 'working-capital' | 'monthly-cash-flow' | 'reports' | 'charts';
