@@ -1,0 +1,643 @@
+import { useState, useEffect, useMemo } from 'react';
+import { useUser } from '@/contexts/UserContext';
+import { FinancialYear } from '@/lib/types';
+import { Card } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+// Months definition
+type Month = 'Jan' | 'Feb' | 'Mar' | 'Apr' | 'May' | 'Jun' | 'Jul' | 'Aug' | 'Sep' | 'Oct' | 'Nov' | 'Dec';
+const MONTHS: Month[] = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// Get current month (for forecasting)
+const CURRENT_MONTH = new Date().getMonth(); // 0-11
+const CURRENT_YEAR = new Date().getFullYear(); // 2025
+
+// Generate future month labels (12 months from current)
+const generateForecastMonths = () => {
+  const forecastMonths: string[] = [];
+  for (let i = 0; i < 12; i++) {
+    const month = (CURRENT_MONTH + i) % 12;
+    const year = CURRENT_YEAR + Math.floor((CURRENT_MONTH + i) / 12);
+    forecastMonths.push(`${MONTHS[month]} ${year}`);
+  }
+  return forecastMonths;
+};
+
+const FORECAST_MONTHS = generateForecastMonths();
+
+// Interface for yearly totals
+interface YearlyTotals {
+  revenue: number;
+  depreciation: number;
+  receivablesChange: number;
+  inventoryChange: number;
+  payablesChange: number;
+  netOperatingCashFlow: number;
+  capitalExpenditures: number;
+  netInvestingCashFlow: number;
+  dividendsPaid: number;
+  debtRepayment: number;
+  netFinancingCashFlow: number;
+  netChange: number;
+  beginningBalance: number;
+  endingBalance: number;
+}
+
+// Interface for monthly forecast data
+interface MonthlyForecast {
+  revenue: number[];
+  depreciation: number[];
+  receivablesChange: number[];
+  inventoryChange: number[];
+  payablesChange: number[];
+  netOperatingCashFlow: number[];
+  capitalExpenditures: number[];
+  netInvestingCashFlow: number[];
+  dividendsPaid: number[];
+  debtRepayment: number[];
+  netFinancingCashFlow: number[];
+  netChange: number[];
+  beginningBalance: number[];
+  endingBalance: number[];
+}
+
+export default function MonthlyCashFlow() {
+  const { historicalFinancials } = useUser();
+  const [yearlyTotals, setYearlyTotals] = useState<Record<FinancialYear, YearlyTotals>>({
+    '2022': createEmptyYearlyTotals(),
+    '2023': createEmptyYearlyTotals(),
+    '2024': createEmptyYearlyTotals(),
+  });
+  const [futureForecast, setFutureForecast] = useState<MonthlyForecast>(createEmptyMonthlyForecast());
+
+  // Create empty yearly totals structure  
+  function createEmptyYearlyTotals(): YearlyTotals {
+    return {
+      revenue: 0,
+      depreciation: 0,
+      receivablesChange: 0,
+      inventoryChange: 0,
+      payablesChange: 0,
+      netOperatingCashFlow: 0,
+      capitalExpenditures: 0,
+      netInvestingCashFlow: 0,
+      dividendsPaid: 0,
+      debtRepayment: 0,
+      netFinancingCashFlow: 0,
+      netChange: 0,
+      beginningBalance: 0,
+      endingBalance: 0
+    };
+  }
+
+  // Create empty monthly forecast structure  
+  function createEmptyMonthlyForecast(): MonthlyForecast {
+    const emptyArray = Array(12).fill(0);
+    return {
+      revenue: [...emptyArray],
+      depreciation: [...emptyArray],
+      receivablesChange: [...emptyArray],
+      inventoryChange: [...emptyArray],
+      payablesChange: [...emptyArray],
+      netOperatingCashFlow: [...emptyArray],
+      capitalExpenditures: [...emptyArray],
+      netInvestingCashFlow: [...emptyArray],
+      dividendsPaid: [...emptyArray],
+      debtRepayment: [...emptyArray],
+      netFinancingCashFlow: [...emptyArray],
+      netChange: [...emptyArray],
+      beginningBalance: [...emptyArray],
+      endingBalance: [...emptyArray]
+    };
+  }
+
+  // Consolidated data for calculation
+  const financialData = useMemo(() => {
+    if (!historicalFinancials) return null;
+
+    return {
+      '2022': {
+        revenue: historicalFinancials.incomeStatement['2022'].revenue || 0,
+        cogs: historicalFinancials.incomeStatement['2022'].cogs || 0,
+        accountsReceivable: historicalFinancials.balanceSheet['2022'].accountsReceivable || 0,
+        inventory: historicalFinancials.balanceSheet['2022'].inventory || 0,
+        accountsPayable: historicalFinancials.balanceSheet['2022'].accountsPayable || 0,
+        fixedAssets: historicalFinancials.balanceSheet['2022'].fixedAssets || 0,
+        cash: historicalFinancials.balanceSheet['2022'].cash || 0,
+        shortTermDebt: historicalFinancials.balanceSheet['2022'].shortTermDebt || 0,
+        longTermDebt: historicalFinancials.balanceSheet['2022'].longTermDebt || 0,
+      },
+      '2023': {
+        revenue: historicalFinancials.incomeStatement['2023'].revenue || 0,
+        cogs: historicalFinancials.incomeStatement['2023'].cogs || 0,
+        accountsReceivable: historicalFinancials.balanceSheet['2023'].accountsReceivable || 0,
+        inventory: historicalFinancials.balanceSheet['2023'].inventory || 0,
+        accountsPayable: historicalFinancials.balanceSheet['2023'].accountsPayable || 0,
+        fixedAssets: historicalFinancials.balanceSheet['2023'].fixedAssets || 0,
+        cash: historicalFinancials.balanceSheet['2023'].cash || 0,
+        shortTermDebt: historicalFinancials.balanceSheet['2023'].shortTermDebt || 0,
+        longTermDebt: historicalFinancials.balanceSheet['2023'].longTermDebt || 0,
+      },
+      '2024': {
+        revenue: historicalFinancials.incomeStatement['2024'].revenue || 0,
+        cogs: historicalFinancials.incomeStatement['2024'].cogs || 0,
+        accountsReceivable: historicalFinancials.balanceSheet['2024'].accountsReceivable || 0,
+        inventory: historicalFinancials.balanceSheet['2024'].inventory || 0,
+        accountsPayable: historicalFinancials.balanceSheet['2024'].accountsPayable || 0,
+        fixedAssets: historicalFinancials.balanceSheet['2024'].fixedAssets || 0,
+        cash: historicalFinancials.balanceSheet['2024'].cash || 0,
+        shortTermDebt: historicalFinancials.balanceSheet['2024'].shortTermDebt || 0,
+        longTermDebt: historicalFinancials.balanceSheet['2024'].longTermDebt || 0,
+      }
+    };
+  }, [historicalFinancials]);
+
+  // Calculate yearly totals from historical data
+  useEffect(() => {
+    if (!financialData) return;
+
+    const years: FinancialYear[] = ['2022', '2023', '2024'];
+    const newYearlyTotals = { ...yearlyTotals };
+
+    years.forEach((year) => {
+      const data = financialData[year];
+      
+      // Annual values calculation
+      const annualRevenue = data.revenue;
+      const annualCogs = data.cogs;
+      const annualDepreciation = data.fixedAssets * 0.1; // 10% depreciation rate
+      
+      // Working capital changes
+      let prevYear;
+      let receivablesChange = 0;
+      let inventoryChange = 0;
+      let payablesChange = 0;
+      
+      if (year === '2022') {
+        // For 2022, use approximations
+        receivablesChange = -data.accountsReceivable * 0.1; // 10% reduction
+        inventoryChange = -data.inventory * 0.15; // 15% reduction
+        payablesChange = data.accountsPayable * 0.05; // 5% increase
+      } else {
+        prevYear = years[years.indexOf(year) - 1];
+        receivablesChange = data.accountsReceivable - financialData[prevYear].accountsReceivable;
+        inventoryChange = data.inventory - financialData[prevYear].inventory;
+        payablesChange = data.accountsPayable - financialData[prevYear].accountsPayable;
+      }
+      
+      // Capital expenditures
+      let annualCapEx = 0;
+      if (year === '2022') {
+        annualCapEx = data.fixedAssets * 0.15; // 15% of fixed assets
+      } else {
+        prevYear = years[years.indexOf(year) - 1];
+        annualCapEx = data.fixedAssets - financialData[prevYear].fixedAssets + annualDepreciation;
+      }
+      
+      // Financing activities
+      const annualDividends = data.revenue * 0.02; // 2% of revenue as dividends
+      const totalDebt = data.shortTermDebt + data.longTermDebt;
+      const annualDebtRepayment = totalDebt * 0.1; // 10% of debt is repaid annually
+      
+      // Calculate net cash flows
+      const netOperatingCashFlow = annualRevenue - annualCogs + annualDepreciation - 
+                                  receivablesChange - inventoryChange + payablesChange;
+      const netInvestingCashFlow = -annualCapEx;
+      const netFinancingCashFlow = -annualDividends - annualDebtRepayment;
+      const netChange = netOperatingCashFlow + netInvestingCashFlow + netFinancingCashFlow;
+      
+      // Beginning and ending balances
+      const beginningBalance = data.cash - netChange; // Simplified
+      const endingBalance = data.cash;
+      
+      // Set the yearly totals
+      newYearlyTotals[year] = {
+        revenue: annualRevenue,
+        depreciation: annualDepreciation,
+        receivablesChange: receivablesChange,
+        inventoryChange: inventoryChange,
+        payablesChange: payablesChange,
+        netOperatingCashFlow: netOperatingCashFlow,
+        capitalExpenditures: annualCapEx,
+        netInvestingCashFlow: netInvestingCashFlow,
+        dividendsPaid: annualDividends,
+        debtRepayment: annualDebtRepayment,
+        netFinancingCashFlow: netFinancingCashFlow,
+        netChange: netChange,
+        beginningBalance: beginningBalance,
+        endingBalance: endingBalance
+      };
+    });
+    
+    setYearlyTotals(newYearlyTotals);
+    
+    // Generate future forecast based on 2024 data
+    generateFutureForecast(newYearlyTotals['2024']);
+    
+  }, [financialData]);
+  
+  // Generate future forecast based on 2024 data
+  const generateFutureForecast = (data2024: YearlyTotals) => {
+    if (!data2024 || !data2024.revenue) return;
+    
+    const newForecast = createEmptyMonthlyForecast();
+    const growthRate = 0.1; // 10% yearly growth
+    const monthlyGrowthRate = Math.pow(1 + growthRate, 1/12) - 1; // Monthly compounded growth
+    
+    // Seasonal factors to distribute yearly totals (more realistic than equal distribution)
+    const seasonalFactors = {
+      revenue: [0.07, 0.06, 0.08, 0.09, 0.08, 0.09, 0.1, 0.1, 0.08, 0.09, 0.08, 0.08],
+      expenses: [0.09, 0.07, 0.08, 0.08, 0.07, 0.09, 0.09, 0.08, 0.09, 0.09, 0.08, 0.09],
+      capex: [0.05, 0, 0.15, 0, 0, 0.25, 0, 0, 0.3, 0, 0, 0.25], // Lumpy capital expenditures
+      // Quarterly dividends
+      dividends: [0, 0, 0.25, 0, 0, 0.25, 0, 0, 0.25, 0, 0, 0.25],
+    };
+    
+    // Start with 2024 cash as beginning balance
+    let currentCash = data2024.endingBalance;
+    newForecast.beginningBalance[0] = currentCash;
+    
+    // Start with 2024 annual figures and grow them
+    const baseAnnualRevenue = data2024.revenue * (1 + growthRate);
+    const baseAnnualDepreciation = data2024.depreciation * (1 + growthRate * 0.5); // Depreciation grows slower
+    const baseAnnualCapEx = data2024.capitalExpenditures * (1 + growthRate * 1.2); // CapEx might grow faster
+    const baseAnnualDividends = data2024.dividendsPaid * (1 + growthRate * 0.8);
+    const baseAnnualDebtRepayment = data2024.debtRepayment;
+    
+    // Monthly growth on top of base annual figures
+    for (let i = 0; i < 12; i++) {
+      // Apply monthly compounding growth to the base annual figures
+      const monthFactor = Math.pow(1 + monthlyGrowthRate, i);
+      
+      // Revenue grows month over month and follows seasonal pattern
+      newForecast.revenue[i] = (baseAnnualRevenue * seasonalFactors.revenue[i]) * monthFactor;
+      
+      // Depreciation is more stable, slight monthly increase
+      newForecast.depreciation[i] = baseAnnualDepreciation / 12 * monthFactor;
+      
+      // Working capital changes based on revenue changes
+      newForecast.receivablesChange[i] = newForecast.revenue[i] * 0.1 * (i % 3 === 0 ? -1 : 1); // Fluctuating pattern
+      newForecast.inventoryChange[i] = newForecast.revenue[i] * 0.07 * (i % 2 === 0 ? 1 : -1); // Fluctuating pattern
+      newForecast.payablesChange[i] = newForecast.revenue[i] * 0.08 * (i % 4 === 0 ? -1 : 1); // Fluctuating pattern
+      
+      // Capital expenditures are lumpy (concentrated in specific months)
+      newForecast.capitalExpenditures[i] = baseAnnualCapEx * seasonalFactors.capex[i] * monthFactor;
+      newForecast.netInvestingCashFlow[i] = -newForecast.capitalExpenditures[i];
+      
+      // Financing activities
+      newForecast.dividendsPaid[i] = baseAnnualDividends * seasonalFactors.dividends[i] * monthFactor;
+      newForecast.debtRepayment[i] = baseAnnualDebtRepayment / 12; // Evenly distributed
+      newForecast.netFinancingCashFlow[i] = -(newForecast.dividendsPaid[i] + newForecast.debtRepayment[i]);
+      
+      // Net operating cash flow
+      newForecast.netOperatingCashFlow[i] = newForecast.revenue[i] * 0.15 + // 15% of revenue as op. cash flow
+                                          newForecast.depreciation[i] - 
+                                          newForecast.receivablesChange[i] - 
+                                          newForecast.inventoryChange[i] + 
+                                          newForecast.payablesChange[i];
+      
+      // Net change in cash
+      newForecast.netChange[i] = newForecast.netOperatingCashFlow[i] + 
+                               newForecast.netInvestingCashFlow[i] + 
+                               newForecast.netFinancingCashFlow[i];
+      
+      // Update cash balance
+      if (i === 0) {
+        // First month uses starting cash
+        newForecast.endingBalance[i] = newForecast.beginningBalance[i] + newForecast.netChange[i];
+      } else {
+        // Subsequent months use previous ending balance
+        newForecast.beginningBalance[i] = newForecast.endingBalance[i-1];
+        newForecast.endingBalance[i] = newForecast.beginningBalance[i] + newForecast.netChange[i];
+      }
+    }
+    
+    setFutureForecast(newForecast);
+  };
+
+  // Formatting function
+  const formatCurrency = (amount: number) => {
+    return isNaN(amount) || !isFinite(amount) 
+      ? '-' 
+      : '$' + Math.round(amount).toLocaleString();
+  };
+
+  // Color coding for positive/negative values
+  const getValueColor = (value: number) => {
+    if (value > 0) return 'text-green-600';
+    if (value < 0) return 'text-red-600';
+    return '';
+  };
+
+  if (!historicalFinancials) {
+    return (
+      <div className="p-8 text-center">
+        <h3 className="text-xl font-semibold mb-4">Monthly Cash Flow Forecast</h3>
+        <p className="text-neutral-500">Please enter historical financial data first.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-neutral-800">Monthly Cash Flow Forecast</h2>
+      </div>
+      
+      {/* Cash Flow Summary Card */}
+      <Card className="p-5 bg-blue-50">
+        <h3 className="text-lg font-semibold mb-3 text-blue-700">Cash Flow Summary</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white p-4 rounded-lg shadow-sm">
+            <h4 className="text-sm text-neutral-500 mb-1">2024 Ending Cash</h4>
+            <p className="text-2xl font-bold text-primary">
+              {formatCurrency(yearlyTotals['2024'].endingBalance)}
+            </p>
+          </div>
+          <div className="bg-white p-4 rounded-lg shadow-sm">
+            <h4 className="text-sm text-neutral-500 mb-1">Forecast Net Cash Flow</h4>
+            <p className={`text-2xl font-bold ${getValueColor(
+              futureForecast.netChange.reduce((a, b) => a + b, 0)
+            )}`}>
+              {formatCurrency(futureForecast.netChange.reduce((a, b) => a + b, 0))}
+            </p>
+          </div>
+          <div className="bg-white p-4 rounded-lg shadow-sm">
+            <h4 className="text-sm text-neutral-500 mb-1">Forecast Ending Cash</h4>
+            <p className="text-2xl font-bold text-primary">
+              {formatCurrency(futureForecast.endingBalance[11])}
+            </p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Monthly Cash Flow Table */}
+      <div className="bg-white shadow-sm rounded-lg overflow-hidden border border-neutral-200">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableCaption>Monthly Cash Flow Forecast</TableCaption>
+            <TableHeader>
+              <TableRow className="bg-neutral-100">
+                <TableHead className="w-[200px]">Cash Flow Component</TableHead>
+                <TableHead>2022</TableHead>
+                <TableHead>2023</TableHead>
+                <TableHead>2024</TableHead>
+                {FORECAST_MONTHS.map(month => (
+                  <TableHead key={month}>{month}</TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {/* Operating Activities */}
+              <TableRow className="bg-neutral-50">
+                <TableCell colSpan={16} className="font-bold text-neutral-700">
+                  Cash from operating activities:
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Revenue</TableCell>
+                <TableCell>{formatCurrency(yearlyTotals['2022'].revenue)}</TableCell>
+                <TableCell>{formatCurrency(yearlyTotals['2023'].revenue)}</TableCell>
+                <TableCell>{formatCurrency(yearlyTotals['2024'].revenue)}</TableCell>
+                {futureForecast.revenue.map((value, i) => (
+                  <TableCell key={i}>{formatCurrency(value)}</TableCell>
+                ))}
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Depreciation</TableCell>
+                <TableCell>{formatCurrency(yearlyTotals['2022'].depreciation)}</TableCell>
+                <TableCell>{formatCurrency(yearlyTotals['2023'].depreciation)}</TableCell>
+                <TableCell>{formatCurrency(yearlyTotals['2024'].depreciation)}</TableCell>
+                {futureForecast.depreciation.map((value, i) => (
+                  <TableCell key={i}>{formatCurrency(value)}</TableCell>
+                ))}
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Receivables Changes</TableCell>
+                <TableCell className={getValueColor(-yearlyTotals['2022'].receivablesChange)}>
+                  {formatCurrency(-yearlyTotals['2022'].receivablesChange)}
+                </TableCell>
+                <TableCell className={getValueColor(-yearlyTotals['2023'].receivablesChange)}>
+                  {formatCurrency(-yearlyTotals['2023'].receivablesChange)}
+                </TableCell>
+                <TableCell className={getValueColor(-yearlyTotals['2024'].receivablesChange)}>
+                  {formatCurrency(-yearlyTotals['2024'].receivablesChange)}
+                </TableCell>
+                {futureForecast.receivablesChange.map((value, i) => (
+                  <TableCell key={i} className={getValueColor(-value)}>{formatCurrency(-value)}</TableCell>
+                ))}
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Inventory Changes</TableCell>
+                <TableCell className={getValueColor(-yearlyTotals['2022'].inventoryChange)}>
+                  {formatCurrency(-yearlyTotals['2022'].inventoryChange)}
+                </TableCell>
+                <TableCell className={getValueColor(-yearlyTotals['2023'].inventoryChange)}>
+                  {formatCurrency(-yearlyTotals['2023'].inventoryChange)}
+                </TableCell>
+                <TableCell className={getValueColor(-yearlyTotals['2024'].inventoryChange)}>
+                  {formatCurrency(-yearlyTotals['2024'].inventoryChange)}
+                </TableCell>
+                {futureForecast.inventoryChange.map((value, i) => (
+                  <TableCell key={i} className={getValueColor(-value)}>{formatCurrency(-value)}</TableCell>
+                ))}
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Payables Changes</TableCell>
+                <TableCell className={getValueColor(yearlyTotals['2022'].payablesChange)}>
+                  {formatCurrency(yearlyTotals['2022'].payablesChange)}
+                </TableCell>
+                <TableCell className={getValueColor(yearlyTotals['2023'].payablesChange)}>
+                  {formatCurrency(yearlyTotals['2023'].payablesChange)}
+                </TableCell>
+                <TableCell className={getValueColor(yearlyTotals['2024'].payablesChange)}>
+                  {formatCurrency(yearlyTotals['2024'].payablesChange)}
+                </TableCell>
+                {futureForecast.payablesChange.map((value, i) => (
+                  <TableCell key={i} className={getValueColor(value)}>{formatCurrency(value)}</TableCell>
+                ))}
+              </TableRow>
+              <TableRow className="bg-blue-50">
+                <TableCell className="font-bold">Net Cash from Operations</TableCell>
+                <TableCell className={`font-semibold ${getValueColor(yearlyTotals['2022'].netOperatingCashFlow)}`}>
+                  {formatCurrency(yearlyTotals['2022'].netOperatingCashFlow)}
+                </TableCell>
+                <TableCell className={`font-semibold ${getValueColor(yearlyTotals['2023'].netOperatingCashFlow)}`}>
+                  {formatCurrency(yearlyTotals['2023'].netOperatingCashFlow)}
+                </TableCell>
+                <TableCell className={`font-semibold ${getValueColor(yearlyTotals['2024'].netOperatingCashFlow)}`}>
+                  {formatCurrency(yearlyTotals['2024'].netOperatingCashFlow)}
+                </TableCell>
+                {futureForecast.netOperatingCashFlow.map((value, i) => (
+                  <TableCell key={i} className={`font-semibold ${getValueColor(value)}`}>{formatCurrency(value)}</TableCell>
+                ))}
+              </TableRow>
+
+              {/* Investing Activities */}
+              <TableRow className="bg-neutral-50">
+                <TableCell colSpan={16} className="font-bold text-neutral-700">
+                  Cash from investing activities:
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Capital Expenditures</TableCell>
+                <TableCell className={getValueColor(-yearlyTotals['2022'].capitalExpenditures)}>
+                  {formatCurrency(-yearlyTotals['2022'].capitalExpenditures)}
+                </TableCell>
+                <TableCell className={getValueColor(-yearlyTotals['2023'].capitalExpenditures)}>
+                  {formatCurrency(-yearlyTotals['2023'].capitalExpenditures)}
+                </TableCell>
+                <TableCell className={getValueColor(-yearlyTotals['2024'].capitalExpenditures)}>
+                  {formatCurrency(-yearlyTotals['2024'].capitalExpenditures)}
+                </TableCell>
+                {futureForecast.capitalExpenditures.map((value, i) => (
+                  <TableCell key={i} className={getValueColor(-value)}>{formatCurrency(-value)}</TableCell>
+                ))}
+              </TableRow>
+              <TableRow className="bg-blue-50">
+                <TableCell className="font-bold">Net Cash from Investing</TableCell>
+                <TableCell className={`font-semibold ${getValueColor(yearlyTotals['2022'].netInvestingCashFlow)}`}>
+                  {formatCurrency(yearlyTotals['2022'].netInvestingCashFlow)}
+                </TableCell>
+                <TableCell className={`font-semibold ${getValueColor(yearlyTotals['2023'].netInvestingCashFlow)}`}>
+                  {formatCurrency(yearlyTotals['2023'].netInvestingCashFlow)}
+                </TableCell>
+                <TableCell className={`font-semibold ${getValueColor(yearlyTotals['2024'].netInvestingCashFlow)}`}>
+                  {formatCurrency(yearlyTotals['2024'].netInvestingCashFlow)}
+                </TableCell>
+                {futureForecast.netInvestingCashFlow.map((value, i) => (
+                  <TableCell key={i} className={`font-semibold ${getValueColor(value)}`}>{formatCurrency(value)}</TableCell>
+                ))}
+              </TableRow>
+
+              {/* Financing Activities */}
+              <TableRow className="bg-neutral-50">
+                <TableCell colSpan={16} className="font-bold text-neutral-700">
+                  Cash from financing activities:
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Dividends Paid</TableCell>
+                <TableCell className={getValueColor(-yearlyTotals['2022'].dividendsPaid)}>
+                  {formatCurrency(-yearlyTotals['2022'].dividendsPaid)}
+                </TableCell>
+                <TableCell className={getValueColor(-yearlyTotals['2023'].dividendsPaid)}>
+                  {formatCurrency(-yearlyTotals['2023'].dividendsPaid)}
+                </TableCell>
+                <TableCell className={getValueColor(-yearlyTotals['2024'].dividendsPaid)}>
+                  {formatCurrency(-yearlyTotals['2024'].dividendsPaid)}
+                </TableCell>
+                {futureForecast.dividendsPaid.map((value, i) => (
+                  <TableCell key={i} className={getValueColor(-value)}>{formatCurrency(-value)}</TableCell>
+                ))}
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Debt Repayment</TableCell>
+                <TableCell className={getValueColor(-yearlyTotals['2022'].debtRepayment)}>
+                  {formatCurrency(-yearlyTotals['2022'].debtRepayment)}
+                </TableCell>
+                <TableCell className={getValueColor(-yearlyTotals['2023'].debtRepayment)}>
+                  {formatCurrency(-yearlyTotals['2023'].debtRepayment)}
+                </TableCell>
+                <TableCell className={getValueColor(-yearlyTotals['2024'].debtRepayment)}>
+                  {formatCurrency(-yearlyTotals['2024'].debtRepayment)}
+                </TableCell>
+                {futureForecast.debtRepayment.map((value, i) => (
+                  <TableCell key={i} className={getValueColor(-value)}>{formatCurrency(-value)}</TableCell>
+                ))}
+              </TableRow>
+              <TableRow className="bg-blue-50">
+                <TableCell className="font-bold">Net Cash from Financing</TableCell>
+                <TableCell className={`font-semibold ${getValueColor(yearlyTotals['2022'].netFinancingCashFlow)}`}>
+                  {formatCurrency(yearlyTotals['2022'].netFinancingCashFlow)}
+                </TableCell>
+                <TableCell className={`font-semibold ${getValueColor(yearlyTotals['2023'].netFinancingCashFlow)}`}>
+                  {formatCurrency(yearlyTotals['2023'].netFinancingCashFlow)}
+                </TableCell>
+                <TableCell className={`font-semibold ${getValueColor(yearlyTotals['2024'].netFinancingCashFlow)}`}>
+                  {formatCurrency(yearlyTotals['2024'].netFinancingCashFlow)}
+                </TableCell>
+                {futureForecast.netFinancingCashFlow.map((value, i) => (
+                  <TableCell key={i} className={`font-semibold ${getValueColor(value)}`}>{formatCurrency(value)}</TableCell>
+                ))}
+              </TableRow>
+
+              {/* Cash Balance Section */}
+              <TableRow className="bg-neutral-50">
+                <TableCell colSpan={16} className="font-bold text-neutral-700">
+                  Cash Balance:
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Net Change in Cash</TableCell>
+                <TableCell className={`font-semibold ${getValueColor(yearlyTotals['2022'].netChange)}`}>
+                  {formatCurrency(yearlyTotals['2022'].netChange)}
+                </TableCell>
+                <TableCell className={`font-semibold ${getValueColor(yearlyTotals['2023'].netChange)}`}>
+                  {formatCurrency(yearlyTotals['2023'].netChange)}
+                </TableCell>
+                <TableCell className={`font-semibold ${getValueColor(yearlyTotals['2024'].netChange)}`}>
+                  {formatCurrency(yearlyTotals['2024'].netChange)}
+                </TableCell>
+                {futureForecast.netChange.map((value, i) => (
+                  <TableCell key={i} className={`font-semibold ${getValueColor(value)}`}>{formatCurrency(value)}</TableCell>
+                ))}
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Beginning Balance</TableCell>
+                <TableCell>
+                  {formatCurrency(yearlyTotals['2022'].beginningBalance)}
+                </TableCell>
+                <TableCell>
+                  {formatCurrency(yearlyTotals['2023'].beginningBalance)}
+                </TableCell>
+                <TableCell>
+                  {formatCurrency(yearlyTotals['2024'].beginningBalance)}
+                </TableCell>
+                {futureForecast.beginningBalance.map((value, i) => (
+                  <TableCell key={i}>{formatCurrency(value)}</TableCell>
+                ))}
+              </TableRow>
+              <TableRow className="bg-green-50">
+                <TableCell className="font-bold">Ending Cash Balance</TableCell>
+                <TableCell className="font-bold">
+                  {formatCurrency(yearlyTotals['2022'].endingBalance)}
+                </TableCell>
+                <TableCell className="font-bold">
+                  {formatCurrency(yearlyTotals['2023'].endingBalance)}
+                </TableCell>
+                <TableCell className="font-bold">
+                  {formatCurrency(yearlyTotals['2024'].endingBalance)}
+                </TableCell>
+                {futureForecast.endingBalance.map((value, i) => (
+                  <TableCell key={i} className="font-bold">{formatCurrency(value)}</TableCell>
+                ))}
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+      
+      {/* Methodology Card */}
+      <Card className="p-5 bg-blue-50">
+        <h3 className="text-lg font-semibold mb-3 text-blue-700">Monthly Cash Flow Methodology</h3>
+        <div className="space-y-3 text-sm">
+          <p><strong>Historical Data:</strong> The first three columns show actual historical annual cash flow data from 2022-2024.</p>
+          <p><strong>12-Month Forecast:</strong> The remaining columns show a detailed monthly forecast starting from April 2025.</p>
+          <p><strong>Growth Assumptions:</strong> The forecast assumes a 10% annual growth rate (compounded monthly) from 2024 year-end figures.</p>
+          <p><strong>Seasonality Factors:</strong> Revenue, expenses and capital expenditures follow typical industry seasonal patterns.</p>
+          <p><strong>Working Capital:</strong> Receivables, inventory, and payables changes are based on revenue projections.</p>
+          <p className="text-xs text-neutral-500 italic mt-2">Note: This forecast uses historical data as a basis. For more accurate projections, adjust the growth rate, seasonality patterns, and debt payment assumptions to match your specific business plans.</p>
+        </div>
+      </Card>
+    </div>
+  );
+}
