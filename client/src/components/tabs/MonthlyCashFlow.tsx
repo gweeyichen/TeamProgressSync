@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useUser } from '@/contexts/UserContext';
+import { useDebt } from '@/contexts/DebtContext';
 import { FinancialYear, ProjectionParams } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import {
@@ -121,6 +122,7 @@ interface AnnualCashFlowSummary {
 
 export default function MonthlyCashFlow() {
   const { historicalFinancials } = useUser();
+  const { debtParameters } = useDebt();
   const [historicalSummary, setHistoricalSummary] = useState<Record<FinancialYear, AnnualCashFlowSummary>>({
     '2022': createEmptyAnnualSummary(),
     '2023': createEmptyAnnualSummary(),
@@ -454,9 +456,33 @@ export default function MonthlyCashFlow() {
       newFutureCashFlow.financingActivities.dividendsPaid[i] = 
         ((i + 1) % 3 === 0) ? (newFutureCashFlow.operatingActivities.revenue[i] * 0.02) * 3 : 0;
       
-      // Debt repayment (monthly)
-      newFutureCashFlow.financingActivities.debtRepayment[i] = monthlyDebtRepayment2024 * 
-        (1 + (i * monthlyRevenueGrowthRate / 4)); // Gradually increases
+      // Debt repayment based on DebtContext parameters
+      if (debtParameters.debtAmount > 0) {
+        // Get debt parameters from context
+        const { debtAmount, debtInterestRate, debtPaymentType } = debtParameters;
+        
+        if (debtPaymentType === 'linear') {
+          // Linear payments: equal principal + interest on remaining balance
+          const loanDuration = 36; // 3 years = 36 months
+          const monthlyPrincipal = debtAmount / loanDuration;
+          const remainingPrincipal = debtAmount - (monthlyPrincipal * i);
+          const monthlyInterest = (remainingPrincipal * (debtInterestRate / 100)) / 12;
+          
+          // Monthly payment is principal + interest
+          newFutureCashFlow.financingActivities.debtRepayment[i] = monthlyPrincipal + monthlyInterest;
+        } else {
+          // Lump sum: only interest payments until final balloon payment
+          const monthlyInterest = (debtAmount * (debtInterestRate / 100)) / 12;
+          
+          // Pay interest every month, principal at the end of year 3 (month 36, which is after our 12-month window)
+          // Our window is April 2025 - March 2026, so no principal payment in this timeframe
+          newFutureCashFlow.financingActivities.debtRepayment[i] = monthlyInterest;
+        }
+      } else {
+        // Use historical data if no debt parameters provided
+        newFutureCashFlow.financingActivities.debtRepayment[i] = monthlyDebtRepayment2024 * 
+          (1 + (i * monthlyRevenueGrowthRate / 4));
+      }
       
       // Update total debt (decreased by repayments)
       totalDebt -= newFutureCashFlow.financingActivities.debtRepayment[i];
@@ -508,7 +534,7 @@ export default function MonthlyCashFlow() {
     }
     
     setFutureCashFlow(newFutureCashFlow);
-  }, [financialData, historicalSummary, projectionParams, projected2025Data]);
+  }, [financialData, historicalSummary, projectionParams, projected2025Data, debtParameters]);
   
   // Chart data preparation
   const cashFlowChartData = useMemo(() => {
@@ -644,8 +670,20 @@ export default function MonthlyCashFlow() {
       </div>
       
       {/* Cash Flow Summary Card */}
+      {/* Cash flow summary and debt info */}
       <Card className="p-5 bg-blue-50">
-        <h3 className="text-lg font-semibold mb-3 text-blue-700">Cash Flow Summary (Apr 2025 - Mar 2026)</h3>
+        <div className="flex justify-between items-start mb-3">
+          <h3 className="text-lg font-semibold text-blue-700">Cash Flow Summary (Apr 2025 - Mar 2026)</h3>
+          {debtParameters.debtAmount > 0 && (
+            <div className="text-sm bg-blue-100 p-2 rounded">
+              <span className="font-medium">Debt Profile:</span> {debtParameters.debtPaymentType === 'linear' ? 'Linear Amortization' : 'Interest-Only + Balloon'}
+              <span className="mx-1">•</span>
+              <span className="font-medium">Amount:</span> {formatCurrency(debtParameters.debtAmount)}
+              <span className="mx-1">•</span>
+              <span className="font-medium">Rate:</span> {debtParameters.debtInterestRate}%
+            </div>
+          )}
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-white p-4 rounded-lg shadow-sm">
             <h4 className="text-sm text-neutral-500 mb-1">Beginning Cash (Apr 2025)</h4>
