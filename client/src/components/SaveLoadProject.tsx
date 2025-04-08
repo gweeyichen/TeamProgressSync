@@ -35,10 +35,16 @@ export default function SaveLoadProject({ onSave, onLoad }: SaveLoadProjectProps
     const fetchSavedProjects = async () => {
       try {
         const response = await fetch('/api/saved-projects');
-        const projects = await response.json();
-        setSavedProjects(projects);
+        const data = await response.json();
+        if (data.error) {
+          console.error('Error fetching saved projects:', data.error);
+          setSavedProjects([]);
+        } else {
+          setSavedProjects(data || []);
+        }
       } catch (error) {
         console.error('Error fetching saved projects:', error);
+        setSavedProjects([]);
       }
     };
     fetchSavedProjects();

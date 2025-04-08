@@ -11,18 +11,19 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+
   // Financial data methods
   getFinancialDataByUser(userId: number): Promise<FinancialData | undefined>;
   saveFinancialData(data: InsertFinancialData): Promise<FinancialData>;
-  
+
   // Valuation parameters methods
   getValuationParametersByUser(userId: number): Promise<ValuationParameters | undefined>;
   saveValuationParameters(params: InsertValuationParameters): Promise<ValuationParameters>;
-  
+
   // Investment model methods
   getInvestmentModelByUser(userId: number): Promise<InvestmentModel | undefined>;
   saveInvestmentModel(model: InsertInvestmentModel): Promise<InvestmentModel>;
+  getSavedProjects(): Promise<string[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -43,17 +44,17 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return user;
   }
-  
+
   async getFinancialDataByUser(userId: number): Promise<FinancialData | undefined> {
     const [data] = await db.select().from(financialData).where(eq(financialData.userId, userId));
     return data || undefined;
   }
-  
+
   async saveFinancialData(data: InsertFinancialData): Promise<FinancialData> {
     // Try to update existing data first
     const [existingData] = await db.select().from(financialData)
       .where(eq(financialData.userId, data.userId));
-      
+
     if (existingData) {
       const [updatedData] = await db.update(financialData)
         .set(data)
@@ -67,17 +68,17 @@ export class DatabaseStorage implements IStorage {
       return newData;
     }
   }
-  
+
   async getValuationParametersByUser(userId: number): Promise<ValuationParameters | undefined> {
     const [params] = await db.select().from(valuationParameters).where(eq(valuationParameters.userId, userId));
     return params || undefined;
   }
-  
+
   async saveValuationParameters(params: InsertValuationParameters): Promise<ValuationParameters> {
     // Try to update existing parameters first
     const [existingParams] = await db.select().from(valuationParameters)
       .where(eq(valuationParameters.userId, params.userId));
-      
+
     if (existingParams) {
       const [updatedParams] = await db.update(valuationParameters)
         .set(params)
@@ -91,17 +92,17 @@ export class DatabaseStorage implements IStorage {
       return newParams;
     }
   }
-  
+
   async getInvestmentModelByUser(userId: number): Promise<InvestmentModel | undefined> {
     const [model] = await db.select().from(investmentModels).where(eq(investmentModels.userId, userId));
     return model || undefined;
   }
-  
+
   async saveInvestmentModel(model: InsertInvestmentModel): Promise<InvestmentModel> {
     // Try to update existing model first
     const [existingModel] = await db.select().from(investmentModels)
       .where(eq(investmentModels.userId, model.userId));
-      
+
     if (existingModel) {
       const [updatedModel] = await db.update(investmentModels)
         .set(model)
@@ -114,6 +115,11 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return newModel;
     }
+  }
+
+  async getSavedProjects(): Promise<string[]> {
+    const projects = await db.select().from(financialData);
+    return projects.map(p => p.name || 'Untitled Project');
   }
 }
 
