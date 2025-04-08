@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { FinancialYear, FinancialData } from '@/lib/types';
@@ -52,6 +52,148 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     balanceSheet: Record<FinancialYear, FinancialData>;
     cashFlow: Record<FinancialYear, FinancialData>;
   } | null>(null);
+  
+  // Default historical financials for initialization
+  useEffect(() => {
+    // If there are no historical financials, initialize with default values
+    if (!historicalFinancials) {
+      // These values match the default ones from HistoricalFinancials.tsx initialFinancialData
+      setHistoricalFinancials({
+        incomeStatement: {
+          '2022': { 
+            revenue: 5000, 
+            cogs: 1750,
+            researchDevelopment: 500,
+            salesMarketing: 700,
+            generalAdmin: 400,
+            interestExpense: 120,
+            otherIncome: 30,
+            incomeTax: 360,
+            grossProfit: 3250,
+            totalOperatingExpenses: 1600,
+            operatingIncome: 1650,
+            incomeBeforeTax: 1560,
+            netIncome: 1200
+          },
+          '2023': { 
+            revenue: 6200, 
+            cogs: 2170,
+            researchDevelopment: 620,
+            salesMarketing: 870,
+            generalAdmin: 500,
+            interestExpense: 150,
+            otherIncome: 40,
+            incomeTax: 450,
+            grossProfit: 4030,
+            totalOperatingExpenses: 1990,
+            operatingIncome: 2040,
+            incomeBeforeTax: 1930,
+            netIncome: 1480
+          },
+          '2024': { 
+            revenue: 7800, 
+            cogs: 2730,
+            researchDevelopment: 780,
+            salesMarketing: 1090,
+            generalAdmin: 620,
+            interestExpense: 180,
+            otherIncome: 50,
+            incomeTax: 560,
+            grossProfit: 5070,
+            totalOperatingExpenses: 2490,
+            operatingIncome: 2580,
+            incomeBeforeTax: 2450,
+            netIncome: 1890
+          }
+        },
+        balanceSheet: {
+          '2022': { 
+            cash: 1000, 
+            accountsReceivable: 800, 
+            inventory: 700, 
+            fixedAssets: 2000,
+            accountsPayable: 500,
+            shortTermDebt: 700,
+            longTermDebt: 1000,
+            equity: 2300,
+            totalAssets: 4500,
+            totalLiabilities: 2200,
+            totalLiabilitiesEquity: 4500
+          },
+          '2023': { 
+            cash: 1300, 
+            accountsReceivable: 1000, 
+            inventory: 800, 
+            fixedAssets: 2700,
+            accountsPayable: 600,
+            shortTermDebt: 900,
+            longTermDebt: 1400,
+            equity: 2900,
+            totalAssets: 5800,
+            totalLiabilities: 2900,
+            totalLiabilitiesEquity: 5800
+          },
+          '2024': { 
+            cash: 1700, 
+            accountsReceivable: 1200, 
+            inventory: 900, 
+            fixedAssets: 3400,
+            accountsPayable: 700,
+            shortTermDebt: 1100,
+            longTermDebt: 1700,
+            equity: 3700,
+            totalAssets: 7200,
+            totalLiabilities: 3500,
+            totalLiabilitiesEquity: 7200
+          }
+        },
+        cashFlow: {
+          '2022': { 
+            netIncome: 850, 
+            depreciation: 200, 
+            accountsReceivableChange: -80, 
+            inventoryChange: -105, 
+            accountsPayableChange: 25, 
+            netCashOperating: 990, 
+            capitalExpenditures: 400, 
+            netCashInvesting: -400, 
+            debtChange: 300, 
+            dividendsPaid: 100, 
+            netCashFinancing: 200, 
+            netCashChange: 790 
+          },
+          '2023': { 
+            netIncome: 1050, 
+            depreciation: 270, 
+            accountsReceivableChange: -200, 
+            inventoryChange: -100, 
+            accountsPayableChange: 100, 
+            netCashOperating: 1120, 
+            capitalExpenditures: 500, 
+            netCashInvesting: -500, 
+            debtChange: 600, 
+            dividendsPaid: 120, 
+            netCashFinancing: 480, 
+            netCashChange: 1100 
+          },
+          '2024': { 
+            netIncome: 1320, 
+            depreciation: 340, 
+            accountsReceivableChange: -200, 
+            inventoryChange: -100, 
+            accountsPayableChange: 100, 
+            netCashOperating: 1460, 
+            capitalExpenditures: 600, 
+            netCashInvesting: -600, 
+            debtChange: 500, 
+            dividendsPaid: 156, 
+            netCashFinancing: 344, 
+            netCashChange: 1204 
+          }
+        }
+      });
+    }
+  }, []);
 
   // Mutation to save financial data
   const financialDataMutation = useMutation({

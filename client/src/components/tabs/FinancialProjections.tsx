@@ -18,7 +18,7 @@ const initialProjectionParams: ProjectionParams = {
 };
 
 export default function FinancialProjections() {
-  const projectionYears: ProjectionYear[] = ['2025', '2026', '2027', '2028', '2029'];
+  const projectionYears: ProjectionYear[] = ['2025', '2026', '2027', '2028', '2029', '2030', '2031', '2032'];
   const { historicalFinancials } = useUser();
   
   // Handle industry selection and parameter updates
@@ -32,28 +32,34 @@ export default function FinancialProjections() {
   // We don't need separate state for projectedData; use the useMemo value directly
   
   // Base values for projections - using data from historical financials when available
-  const baseValues = useMemo(() => historicalFinancials ? {
-    revenue: historicalFinancials.incomeStatement['2024']?.revenue || 7800,
-    cogs: historicalFinancials.incomeStatement['2024']?.cogs || 2730,
-    cash: historicalFinancials.balanceSheet['2024']?.cash || 1700,
-    accountsReceivable: historicalFinancials.balanceSheet['2024']?.accountsReceivable || 1200,
-    inventory: historicalFinancials.balanceSheet['2024']?.inventory || 900,
-    fixedAssets: historicalFinancials.balanceSheet['2024']?.fixedAssets || 3400,
-    accountsPayable: historicalFinancials.balanceSheet['2024']?.accountsPayable || 700,
-    shortTermDebt: historicalFinancials.balanceSheet['2024']?.shortTermDebt || 1100,
-    longTermDebt: historicalFinancials.balanceSheet['2024']?.longTermDebt || 1700,
-    equity: historicalFinancials.balanceSheet['2024']?.equity || 3700
-  } : {
-    revenue: 7800, // from 2024
-    cogs: 2730,
-    cash: 1700,
-    accountsReceivable: 1200,
-    inventory: 900,
-    fixedAssets: 3400,
-    accountsPayable: 700,
-    shortTermDebt: 1100,
-    longTermDebt: 1700,
-    equity: 3700
+  const baseValues = useMemo(() => {
+    if (historicalFinancials) {
+      return {
+        revenue: historicalFinancials.incomeStatement['2024']?.revenue || 7800,
+        cogs: historicalFinancials.incomeStatement['2024']?.cogs || 2730,
+        cash: historicalFinancials.balanceSheet['2024']?.cash || 1700,
+        accountsReceivable: historicalFinancials.balanceSheet['2024']?.accountsReceivable || 1200,
+        inventory: historicalFinancials.balanceSheet['2024']?.inventory || 900,
+        fixedAssets: historicalFinancials.balanceSheet['2024']?.fixedAssets || 3400,
+        accountsPayable: historicalFinancials.balanceSheet['2024']?.accountsPayable || 700,
+        shortTermDebt: historicalFinancials.balanceSheet['2024']?.shortTermDebt || 1100,
+        longTermDebt: historicalFinancials.balanceSheet['2024']?.longTermDebt || 1700,
+        equity: historicalFinancials.balanceSheet['2024']?.equity || 3700
+      };
+    } else {
+      return {
+        revenue: 7800, // from 2024
+        cogs: 2730,
+        cash: 1700,
+        accountsReceivable: 1200,
+        inventory: 900,
+        fixedAssets: 3400,
+        accountsPayable: 700,
+        shortTermDebt: 1100,
+        longTermDebt: 1700,
+        equity: 3700
+      };
+    }
   }, [historicalFinancials]);
   
   // Display notification when historical data is loaded (using ref to prevent infinite renders)
@@ -87,7 +93,10 @@ export default function FinancialProjections() {
       '2026': {},
       '2027': {},
       '2028': {},
-      '2029': {}
+      '2029': {},
+      '2030': {},
+      '2031': {},
+      '2032': {}
     };
     
     // Generate projections for each year
@@ -99,7 +108,7 @@ export default function FinancialProjections() {
       // Income Statement Projections
       const revenue = index === 0 
         ? prevYearRevenue * (1 + params.revenueGrowth / 100)
-        : newProjectedData.incomeStatement[projectionYears[index - 1]]?.revenue * (1 + params.revenueGrowth / 100) || 0;
+        : (newProjectedData.incomeStatement[projectionYears[index - 1]]?.revenue || prevYearRevenue) * (1 + params.revenueGrowth / 100);
       
       const cogs = revenue * (1 - params.grossMargin / 100);
       const grossProfit = revenue - cogs;
@@ -274,7 +283,7 @@ export default function FinancialProjections() {
   
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
-      <h2 className="text-xl font-bold mb-4">Financial Projections (2025-2029)</h2>
+      <h2 className="text-xl font-bold mb-4">Financial Projections (2025-2032)</h2>
       
       <div className="flex justify-between items-center mb-6">
         <div>
