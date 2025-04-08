@@ -128,7 +128,28 @@ export default function MonthlyCashFlow() {
   });
   const [futureCashFlow, setFutureCashFlow] = useState<MonthlyCashFlowData>(createEmptyMonthlyCashFlowData());
   const [projectionParams, setProjectionParams] = useState<ProjectionParams>(DEFAULT_PROJECTION_PARAMS);
-
+  
+  // Fetch the projected data for 2025 using the same calculation as Financial Projections
+  const projected2025Data = useMemo(() => {
+    if (!historicalFinancials) return null;
+    
+    // Use the exact same base values and calculation logic as in FinancialProjections
+    const baseValues = {
+      revenue: historicalFinancials.incomeStatement['2024']?.revenue || 7800,
+      cogs: historicalFinancials.incomeStatement['2024']?.cogs || 2730,
+      // Include other needed base values...
+    };
+    
+    // Calculate the 2025 revenue using the same formula from FinancialProjections
+    const revenue2025 = baseValues.revenue * (1 + projectionParams.revenueGrowth / 100);
+    const cogs2025 = revenue2025 * (1 - projectionParams.grossMargin / 100);
+    
+    return {
+      revenue: revenue2025,
+      cogs: cogs2025
+    };
+  }, [historicalFinancials, projectionParams]);
+  
   // Create empty data structures
   function createEmptyMonthlyCashFlowData(): MonthlyCashFlowData {
     const emptyMonthArray = Array(12).fill(0);
@@ -189,9 +210,8 @@ export default function MonthlyCashFlow() {
     };
   }
 
-  // Set projection parameters - could be used from a UI control or from FinancialProjections
+  // Get the same projection parameters as the Financial Projections tab
   useEffect(() => {
-    // If you had access to the FinancialProjections params, you would use them here
     setProjectionParams(DEFAULT_PROJECTION_PARAMS);
   }, []);
 
@@ -364,9 +384,20 @@ export default function MonthlyCashFlow() {
     // Seasonal factors (optional)
     const seasonality = [1.0, 0.95, 1.05, 1.1, 1.08, 1.12, 1.15, 1.1, 1.05, 1.08, 1.15, 1.2];
     
-    // Initialize prev month values
-    let prevMonthRevenue = monthlyRevenue2024 * (1 + monthlyRevenueGrowthRate) * 3; // Grow for Jan-Mar 2025
-    let prevMonthCogs = monthlyCogs2024 * (1 + monthlyRevenueGrowthRate) * 3;
+    // Initialize with values calculated the same way as in Financial Projections
+    // If we have projected data, use that for 2025 instead of calculating our own
+    const revenue2025 = projected2025Data?.revenue || 
+      latestData.revenue * (1 + projectionParams.revenueGrowth / 100);
+    const cogs2025 = projected2025Data?.cogs || 
+      revenue2025 * (1 - projectionParams.grossMargin / 100);
+    
+    // Calculate monthly values by dividing the annual values by 12
+    const monthlyRevenue2025 = revenue2025 / 12;
+    const monthlyCogs2025 = cogs2025 / 12;
+    
+    // Initialize prev month values for March 2025 (before our forecast starts)
+    let prevMonthRevenue = monthlyRevenue2025;
+    let prevMonthCogs = monthlyCogs2025;
     let totalDebt = latestData.shortTermDebt + latestData.longTermDebt;
     
     // Calculate each month (April 2025 through March 2026)
@@ -504,7 +535,7 @@ export default function MonthlyCashFlow() {
     }
     
     setFutureCashFlow(newFutureCashFlow);
-  }, [financialData, historicalSummary, projectionParams]);
+  }, [financialData, historicalSummary, projectionParams, projected2025Data]);
   
   // Chart data preparation
   const cashFlowChartData = useMemo(() => {
